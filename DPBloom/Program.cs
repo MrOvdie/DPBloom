@@ -1,0 +1,58 @@
+using AutoMapper;
+using DPBloom.Application.Lecture;
+using DPBloom.Core;
+using DPBloom.Infrastructure;
+using DPBloom.Infrastructure.Lecture;
+using DPBloom.Infrastructure.User;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Scalar.AspNetCore;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Add services to the container.
+
+builder.Services.AddControllers();
+
+builder.Services.AddAuthorization();
+
+builder.Services.AddIdentityApiEndpoints<ApplicationUser>()
+    .AddEntityFrameworkStores<ApplicationDbContext>();
+
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("LaptopConnection")));
+
+
+builder.Services.AddScoped<IdentityUser, ApplicationUser>();
+
+builder.Services.AddAutoMapper(config =>
+    config.AddProfiles(new List<Profile> { new LectureDaoProfile(), new LectureDtoProfile() }));
+
+builder.Services.AddOpenApi();
+
+var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+    
+    app.MapScalarApiReference(options =>
+    {
+        options.WithTitle("My API")
+            .WithTheme(ScalarTheme.Mars)
+            .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient)
+            .WithDarkMode();
+    });
+}
+
+app.UseHttpsRedirection();
+
+app.UseAuthentication();
+
+app.UseAuthorization();
+
+app.MapControllers();
+
+app.MapIdentityApi<ApplicationUser>(); //adds basic endpoints for using Identity for user 
+
+app.Run();

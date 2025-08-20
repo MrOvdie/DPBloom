@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <Folder Include="User\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\DPBloom.Core\DPBloom.Core.csproj" />
+      <ProjectReference Include="..\DPBloom.Infrastructure\DPBloom.Infrastructure.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="AutoMapper" Version="15.0.1" />
+    </ItemGroup>
+
+</Project>

@@ -1,0 +1,24 @@
+﻿using DPBloom.Infrastructure.Base;
+using DPBloom.Infrastructure.Course;
+using DPBloom.Infrastructure.Extensions;
+using DPBloom.Infrastructure.Topic;
+using DPBloom.Infrastructure.User;
+
+namespace DPBloom.Infrastructure.Lecture;
+
+public class LectureDao : EntityDaoBase<Guid>, ISoftDelete
+{
+    public string Title { get; set; }
+    public string? Description { get; set; }
+    public string CourseId { get; set; }
+    public string? TopicId { get; set; }
+    public string AuthorId { get; set; }
+    public string? ContentLink { get; set; }
+    public string? FilePath { get; set; }
+    public bool IsDeleted { get; set; }
+    public DateTime? DeletedOn { get; set; }
+    
+    public CourseDao Course { get; set; }
+    public TopicDao Topic { get; set; }
+    public ApplicationUser Author { get; set; }
+}

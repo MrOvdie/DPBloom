@@ -1,0 +1,6 @@
+@DPBloom.Presentation_HostAddress = http://localhost:5000
+
+GET {{DPBloom.Presentation_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
