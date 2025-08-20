@@ -1,6 +1,8 @@
-﻿namespace DPBloom.Application.Course;
+﻿using DPBloom.Application.Base;
 
-public class CourseDto
+namespace DPBloom.Application.Course;
+
+public class CourseDto : ModelBase<Guid>
 {
     
 }

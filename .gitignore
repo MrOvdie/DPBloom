@@ -41,6 +41,10 @@ TestResult.xml
 [Rr]eleasePS/
 dlldata.c
 
+# appsettings
+appsettings.json
+appsettings.Development.json
+
 # DNX
 project.lock.json
 project.fragment.lock.json

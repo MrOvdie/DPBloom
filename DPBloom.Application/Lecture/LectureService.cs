@@ -17,13 +17,13 @@ public class LectureService : ILectureService
         _mapper = mapper;
     }
 
-    public async Task<IEnumerable<LectureDto>> GetLecturesListAsync()
+    public async Task<IEnumerable<LectureDto>> GetAllAsync()
     {
         var lectures = await _lectureRepository.GetAllAsync();
         return _mapper.Map<IEnumerable<LectureDto>>(lectures);
     }
 
-    public async Task<LectureDto> GetLectureByIdAsync(string lectureId)
+    public async Task<LectureDto> GetByIdAsync(string lectureId)
     {
         var lecture = await _lectureRepository.GetByIdAsync(lectureId);
 

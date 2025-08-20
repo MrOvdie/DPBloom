@@ -16,13 +16,13 @@ public class TopicService : ITopicService
         _mapper = mapper;
     }
 
-    public async Task<IEnumerable<TopicDto>> GetTopicsListAsync()
+    public async Task<IEnumerable<TopicDto>> GetAllAsync()
     {
         var topics = await _topicRepository.GetAllAsync();
         return _mapper.Map<IEnumerable<TopicDto>>(topics);
     }
 
-    public async Task<TopicDto> GetTopicByIdAsync(string topicId)
+    public async Task<TopicDto> GetByIdAsync(string topicId)
     {
         var topic = await _topicRepository.GetByIdAsync(topicId);
 
