@@ -21,7 +21,7 @@ public interface IRepository<TEntityReturn, TEntity>
     Task<IReadOnlyList<TEntityReturn>> GetAsync(ISpecification<TEntity> spec);
     Task<TEntityReturn> GetByIdAsync(string id);
     Task<TEntityReturn> AddAsync(TEntityReturn entity);
-    Task UpdateAsync(TEntityReturn entity);
+    Task<TEntityReturn> UpdateAsync(TEntityReturn entity);
     Task DeleteAsync(TEntityReturn entity);
     Task RestoreAsync(TEntityReturn entity);
     Task<bool> ExistsAsync(Expression<Func<TEntity, bool>> predicate);

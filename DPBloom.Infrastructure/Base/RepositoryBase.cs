@@ -87,12 +87,16 @@ public class RepositoryBase<TEntityReturn, TEntity, TContext> : IRepository<TEnt
         return Mapper.Map<TEntityReturn>(entityDao);
     }
 
-    public async Task UpdateAsync(TEntityReturn entity)
+    public async Task<TEntityReturn> UpdateAsync(TEntityReturn entity)
     {
         //TODO: check, if it working correctly
         var entityDao = Mapper.Map<TEntity>(entity);
         DbContext.Entry(entityDao).State = EntityState.Modified;
-        await DbContext.SaveChangesAsync();
+        
+        if(await DbContext.SaveChangesAsync() > 0)
+            return Mapper.Map<TEntityReturn>(entityDao);
+        
+        return null;
     }
 
     public async Task DeleteAsync(TEntityReturn entity)

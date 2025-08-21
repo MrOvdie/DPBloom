@@ -13,8 +13,8 @@ public class LectureDao : EntityDaoBase<Guid>, ISoftDelete
     public string CourseId { get; set; }
     public string? TopicId { get; set; }
     public string AuthorId { get; set; }
-    public string? ContentLink { get; set; }
-    public string? FilePath { get; set; }
+    public IEnumerable<string>? ContentLinks { get; set; }
+    public IEnumerable<string>? FilePaths { get; set; }
     public bool IsDeleted { get; set; }
     public DateTime? DeletedOn { get; set; }
     

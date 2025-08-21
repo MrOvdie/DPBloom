@@ -5,6 +5,6 @@ public interface ICrud<TModel>
 {
     Task<IEnumerable<TModel>> GetAllAsync();
     Task<TModel> GetByIdAsync(string id);
-    Task DeleteAsync(string modelId);
-    Task RestoreAsync(string modelId);
+    Task DeleteAsync(string id);
+    Task RestoreAsync(string id);
 }

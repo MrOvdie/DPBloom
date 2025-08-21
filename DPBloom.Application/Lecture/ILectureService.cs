@@ -10,7 +10,7 @@ public interface ILectureService : ICrud<LectureDto>
     Task<IEnumerable<LectureDto>> GetLecturesByCourseAsync(string courseId);
     Task<IEnumerable<LectureDto>> GetLecturesByTopicAsync(string topicId);
     Task<IEnumerable<LectureDto>> GetLectureByAuthorAsync(string authorId);
-    Task<LectureDto> Create(CreateLecture createLecture);
-    Task UpdateAsync(UpdateLecture updateLecture);
+    Task<LectureDto> CreateAsync(CreateLecture createLecture);
+    Task<LectureDto> UpdateAsync(string lectureId, UpdateLecture updateLecture);
 
 }

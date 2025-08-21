@@ -1,6 +1,9 @@
-﻿namespace DPBloom.Infrastructure.Course;
+﻿using DPBloom.Core.Course;
+using DPBloom.Infrastructure.Base;
 
-public interface ICourseRepository
+namespace DPBloom.Infrastructure.Course;
+
+public interface ICourseRepository : IRepository<CourseModel,CourseDao>
 {
     
 }

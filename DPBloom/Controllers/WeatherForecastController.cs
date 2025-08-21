@@ -1,3 +1,4 @@
+using DPBloom.Application.Topic.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
