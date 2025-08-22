@@ -7,6 +7,8 @@ public class CreateTopicValidator : AbstractValidator<CreateTopic>
 {
     public CreateTopicValidator()
     {
+        RuleFor(ct => ct).NotNull().WithMessage("Topic object cannot be null.");
+        
         RuleFor(ct => ct.Title)
             .NotEmpty().WithMessage("Title is required.")
             .MinimumLength(3).WithMessage("Title must be at least 3 characters long.")

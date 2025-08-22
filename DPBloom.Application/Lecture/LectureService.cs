@@ -13,7 +13,8 @@ public class LectureService : ILectureService
     private readonly IValidator<CreateLecture> _createValidator;
     private readonly IValidator<UpdateLecture> _updateValidator;
 
-    public LectureService(ILectureRepository lectureRepository, IMapper mapper, IValidator<CreateLecture> createValidator, IValidator<UpdateLecture> updateValidator)
+    public LectureService(ILectureRepository lectureRepository, IMapper mapper,
+        IValidator<CreateLecture> createValidator, IValidator<UpdateLecture> updateValidator)
     {
         _lectureRepository = lectureRepository;
         _mapper = mapper;
@@ -33,102 +34,115 @@ public class LectureService : ILectureService
 
         if (lecture is null)
             throw new KeyNotFoundException($"Lecture with ID {id} not found");
-        
-        
+
+
         return _mapper.Map<LectureDto>(lecture);
     }
 
     public async Task<IEnumerable<LectureDto>> GetLectureByNameAsync(string lectureName)
     {
         var lectures = await _lectureRepository.GetAsync(predicate: l => l.Title == lectureName);
-        
+
         if (lectures is null)
             throw new KeyNotFoundException($"Lectures with Title {lectureName} not found");
-        
+
         return _mapper.Map<IEnumerable<LectureDto>>(lectures);
     }
 
     public async Task<IEnumerable<LectureDto>> GetLecturesByCourseAsync(string courseId)
     {
         var lectures = await _lectureRepository.GetByCourseAsync(courseId);
-        
+
         if (lectures is null)
             throw new KeyNotFoundException($"Lectures with CourseId {courseId} not found");
-        
-        
+
+
         return _mapper.Map<IEnumerable<LectureDto>>(lectures);
     }
 
     public async Task<IEnumerable<LectureDto>> GetLecturesByTopicAsync(string topicId)
-    { //TODO: add proper topic handler, not just an id
+    {
+        //TODO: add proper topic handler, not just an id
         var lectures = await _lectureRepository.GetByTopicAsync(topicId);
-        
+
         if (lectures is null)
             throw new KeyNotFoundException($"Lectures with TopicId {topicId} not found");
-        
-        
+
+
         return _mapper.Map<IEnumerable<LectureDto>>(lectures);
     }
 
     public async Task<IEnumerable<LectureDto>> GetLectureByAuthorAsync(string authorId)
     {
         var lectures = await _lectureRepository.GetAsync(predicate: l => l.AuthorId.Equals(authorId));
-        
+
         if (lectures is null)
             throw new KeyNotFoundException($"Lectures from Author {authorId} not found");
-        
+
         return _mapper.Map<IEnumerable<LectureDto>>(lectures);
     }
 
     public async Task<LectureDto> CreateAsync(CreateLecture createLecture)
     {
         var validationResult = await _createValidator.ValidateAsync(createLecture);
-        
+
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
-        
-        //TODO: think about checking for duplicates :)
-        
+
+        if (await _lectureRepository.ExistsAsync(l =>
+                l.Title == createLecture.Title && l.CourseId.Equals(createLecture.CourseId) && !l.IsDeleted))
+            throw new InvalidOperationException($"Lecture with name {createLecture.Title} already exists in this course");
+
         var createLectureModel = _mapper.Map<LectureModel>(createLecture);
-        
         createLectureModel.Id = Guid.NewGuid();
-        
-        var createdLecture =  await _lectureRepository.AddAsync(createLectureModel);
-        
+
+        var createdLecture = await _lectureRepository.AddAsync(createLectureModel);
+
         return _mapper.Map<LectureDto>(createdLecture);
     }
 
     public async Task<LectureDto> UpdateAsync(string lectureId, UpdateLecture updateLecture)
     {
         var validationResult = await _updateValidator.ValidateAsync(updateLecture);
-        
+
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
-        
-        var existingLecture = await _lectureRepository.GetByIdAsync(lectureId);
-        
-        if (existingLecture is null)
-            throw new KeyNotFoundException($"Lecture with ID {lectureId} not found");
+
+        var existingLecture = await GetEntityByIdAsync(lectureId);
 
         var updateLectureModel = _mapper.Map<LectureModel>(updateLecture);
         updateLectureModel.Id = existingLecture.Id;
-        
+
         var updatedLecture = await _lectureRepository.UpdateAsync(updateLectureModel);
-        
+
         return _mapper.Map<LectureDto>(updatedLecture);
     }
 
-    public async Task DeleteAsync(string id)
+    public async Task<LectureDto> DeleteAsync(string id)
     {
-        var lecture = await _lectureRepository.GetByIdAsync(id);
-        
+        var lecture = await GetEntityByIdAsync(id);
+
         await _lectureRepository.DeleteAsync(lecture);
+        
+        return _mapper.Map<LectureDto>(lecture);
     }
 
-    public async Task RestoreAsync(string id)
+    public async Task<LectureDto> RestoreAsync(string id)
+    {
+        var lecture = await GetEntityByIdAsync(id);
+
+        await _lectureRepository.DeleteAsync(lecture);
+        
+        return _mapper.Map<LectureDto>(lecture);
+    }
+
+    public async Task<LectureModel> GetEntityByIdAsync(string id)
     {
         var lecture = await _lectureRepository.GetByIdAsync(id);
 
-        await _lectureRepository.DeleteAsync(lecture);
+        if (lecture is null)
+            throw new KeyNotFoundException($"Lecture with ID {id} not found");
+
+        return lecture;
     }
 }

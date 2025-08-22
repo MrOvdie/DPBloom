@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
 
-namespace DPBloom.Application.Mapper;
+namespace _mapper;
 
 public interface IApplicationMapper : IMapper
 {

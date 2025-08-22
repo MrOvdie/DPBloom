@@ -2,6 +2,7 @@
 using DPBloom.Application.Topic.Contracts;
 using DPBloom.Core.Topic;
 using DPBloom.Infrastructure.Topic;
+using FluentValidation;
 
 namespace DPBloom.Application.Topic;
 
@@ -9,11 +10,15 @@ public class TopicService : ITopicService
 {
     private readonly ITopicRepository _topicRepository;
     private readonly IMapper _mapper;
+    private readonly IValidator<CreateTopic> _createTopicValidator;
+    private readonly IValidator<UpdateTopic> _updateTopicValidator;
 
-    public TopicService(ITopicRepository topicRepository, IMapper mapper)
+    public TopicService(ITopicRepository topicRepository, IMapper mapper, IValidator<CreateTopic> createTopicValidator, IValidator<UpdateTopic> updateTopicValidator)
     {
         _topicRepository = topicRepository;
         _mapper = mapper;
+        _createTopicValidator = createTopicValidator;
+        _updateTopicValidator = updateTopicValidator;
     }
 
     public async Task<IEnumerable<TopicDto>> GetAllAsync()
@@ -59,38 +64,64 @@ public class TopicService : ITopicService
 
     public async Task<TopicDto> CreateAsync(CreateTopic createTopic)
     {
-        if (createTopic is null)
-            throw new ArgumentNullException(nameof(createTopic));
-        
-        var topicCreate =  _mapper.Map<TopicModel>(createTopic);
+       var validationResult = await _createTopicValidator.ValidateAsync(createTopic);
+       
+       if (!validationResult.IsValid)
+           throw new ValidationException(validationResult.Errors);
 
-        var isDuplicate = await _topicRepository.ExistsAsync(tc => tc.Title == topicCreate.Title);
-        if (isDuplicate)
-            throw new InvalidOperationException($"Topic with name {topicCreate.Title} already exists");
+       var topicCreate = _mapper.Map<TopicModel>(createTopic);
 
-        var createdTopic = await _topicRepository.AddAsync(topicCreate);
-        
-        return _mapper.Map<TopicDto>(createdTopic);
+       if (await _topicRepository.ExistsAsync(tc =>
+               tc.Title == topicCreate.Title && tc.CourseId.Equals(createTopic.CourseId) && !tc.IsDeleted))
+           throw new InvalidOperationException($"Topic with name {topicCreate.Title} already exists in this course");
+
+       var createdTopic = await _topicRepository.AddAsync(topicCreate);
+
+       return _mapper.Map<TopicDto>(createdTopic);
     }
 
-    public async Task UpdateAsync(UpdateTopic updateTopic)
+    public async Task<TopicDto> UpdateAsync(string topicId, UpdateTopic updateTopic)
     {
-        //TODO: write validation update entity and mapper profile for that
-        var topicUpdate = _mapper.Map<TopicModel>(updateTopic);
-        await _topicRepository.UpdateAsync(topicUpdate);
+        var validationResult = await _updateTopicValidator.ValidateAsync(updateTopic);
+        
+        if (!validationResult.IsValid)
+            throw new ValidationException(validationResult.Errors);
+        
+        var existingTopic = await GetEntityByIdAsync(topicId);
+        
+        var updateTopicModel = _mapper.Map<TopicModel>(updateTopic);
+        updateTopicModel.Id = existingTopic.Id;
+        
+        var updatedCourse = await _topicRepository.UpdateAsync(updateTopicModel);
+        
+        return _mapper.Map<TopicDto>(updatedCourse);
     }
 
-    public async Task DeleteAsync(string topicId)
+    public async Task<TopicDto> DeleteAsync(string topicId)
     {
-        var topic = await _topicRepository.GetByIdAsync(topicId);
+        var topic = await GetEntityByIdAsync(topicId);
 
         await _topicRepository.DeleteAsync(topic);
+
+        return _mapper.Map<TopicDto>(topic);
     }
 
-    public async Task RestoreAsync(string topicId)
+    public async Task<TopicDto> RestoreAsync(string topicId)
     {
-        var topic = await _topicRepository.GetByIdAsync(topicId);
+        var topic = await GetEntityByIdAsync(topicId);
 
         await _topicRepository.RestoreAsync(topic);
+
+        return _mapper.Map<TopicDto>(topic);
+    }
+    
+    public async Task<TopicModel> GetEntityByIdAsync(string id)
+    {
+        var topic = await _topicRepository.GetByIdAsync(id);
+
+        if (topic is null)
+            throw new KeyNotFoundException($"Topic with ID {id} not found");
+
+        return topic;
     }
 }

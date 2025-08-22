@@ -7,6 +7,8 @@ public class CreateCourseValidator : AbstractValidator<CreateCourse>
 {
     public CreateCourseValidator()
     {
+        RuleFor(cc => cc).NotNull().WithMessage("Course object cannot be null.");
+        
         RuleFor(cc => cc.Title)
             .NotEmpty().WithMessage("Title is required.")
             .MinimumLength(3).WithMessage("Title must be at least 3 characters long.")

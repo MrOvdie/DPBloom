@@ -12,5 +12,5 @@ public interface ILectureService : ICrud<LectureDto>
     Task<IEnumerable<LectureDto>> GetLectureByAuthorAsync(string authorId);
     Task<LectureDto> CreateAsync(CreateLecture createLecture);
     Task<LectureDto> UpdateAsync(string lectureId, UpdateLecture updateLecture);
-
+    Task<LectureModel> GetEntityByIdAsync(string id);
 }

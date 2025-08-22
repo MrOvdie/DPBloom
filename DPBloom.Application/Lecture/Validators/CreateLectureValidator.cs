@@ -7,6 +7,8 @@ public class CreateLectureValidator : AbstractValidator<CreateLecture>
 {
     public CreateLectureValidator()
     {
+        RuleFor(cl => cl).NotNull().WithMessage("Lecture object cannot be null.");
+        
         RuleFor(cl => cl.Title)
             .NotEmpty().WithMessage("Title is required.")
             .MinimumLength(3).WithMessage("Title must be at least 3 characters long.")

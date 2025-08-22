@@ -14,7 +14,7 @@ public class RepositoryBase<TEntityReturn, TEntity, TContext> : IRepository<TEnt
 {
     protected readonly TContext DbContext;
     protected readonly IMapper Mapper;
-    
+
     public RepositoryBase(TContext dbContext, IMapper mapper)
     {
         DbContext = dbContext;
@@ -82,20 +82,25 @@ public class RepositoryBase<TEntityReturn, TEntity, TContext> : IRepository<TEnt
     public async Task<TEntityReturn> AddAsync(TEntityReturn entity)
     {
         var entityDao = Mapper.Map<TEntity>(entity);
+        
         await DbContext.Set<TEntity>().AddAsync(entityDao);
-        await DbContext.SaveChangesAsync();
-        return Mapper.Map<TEntityReturn>(entityDao);
+        
+        if (await DbContext.SaveChangesAsync() > 0)
+            return Mapper.Map<TEntityReturn>(entityDao);
+
+        return null;
     }
 
     public async Task<TEntityReturn> UpdateAsync(TEntityReturn entity)
     {
         //TODO: check, if it working correctly
         var entityDao = Mapper.Map<TEntity>(entity);
+        
         DbContext.Entry(entityDao).State = EntityState.Modified;
-        
-        if(await DbContext.SaveChangesAsync() > 0)
+
+        if (await DbContext.SaveChangesAsync() > 0)
             return Mapper.Map<TEntityReturn>(entityDao);
-        
+
         return null;
     }
 
@@ -113,6 +118,7 @@ public class RepositoryBase<TEntityReturn, TEntity, TContext> : IRepository<TEnt
 
     public async Task RestoreAsync(TEntityReturn entity)
     {
+        //TODO: maybe add some checking, if entity was updated (like in UpdateAsync)
         var entityDao = Mapper.Map<TEntity>(entity);
 
         entityDao.Undo();

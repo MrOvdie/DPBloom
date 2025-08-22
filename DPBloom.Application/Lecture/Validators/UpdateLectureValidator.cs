@@ -7,6 +7,8 @@ public class UpdateLectureValidator : AbstractValidator<UpdateLecture>
 {
     public UpdateLectureValidator()
     {
+        RuleFor(ul => ul).NotNull().WithMessage("Lecture object cannot be null.");
+        
         RuleFor(ul => ul.Title)
             .MaximumLength(150).WithMessage("Title must be at most 150 characters long.")
             .MinimumLength(3).When(ul => !string.IsNullOrEmpty(ul.Title))

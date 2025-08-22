@@ -7,7 +7,6 @@ namespace DPBloom.Infrastructure.Lecture;
 
 public class LectureRepository : RepositoryBase<LectureModel, LectureDao, ApplicationDbContext>, ILectureRepository
 {
-    
     public LectureRepository(ApplicationDbContext context, IMapper mapper) 
         : base(context, mapper)
     {
