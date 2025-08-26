@@ -95,6 +95,7 @@ public class LectureService : ILectureService
 
         var createLectureModel = _mapper.Map<LectureModel>(createLecture);
         createLectureModel.Id = Guid.NewGuid();
+        createLectureModel.CreatedOn = createLectureModel.UpdatedOn = DateTime.UtcNow;
 
         var createdLecture = await _lectureRepository.AddAsync(createLectureModel);
 
@@ -112,6 +113,7 @@ public class LectureService : ILectureService
 
         var updateLectureModel = _mapper.Map<LectureModel>(updateLecture);
         updateLectureModel.Id = existingLecture.Id;
+        updateLectureModel.UpdatedOn = DateTime.UtcNow;
 
         var updatedLecture = await _lectureRepository.UpdateAsync(updateLectureModel);
 

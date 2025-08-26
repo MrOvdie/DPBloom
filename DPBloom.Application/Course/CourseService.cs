@@ -70,6 +70,7 @@ public class CourseService : ICourseService
 
         var createCourseModel = _mapper.Map<CourseModel>(createCourse);
         createCourseModel.Id = Guid.NewGuid();
+        createCourseModel.CreatedOn = createCourseModel.UpdatedOn = DateTime.UtcNow;
 
         var createdCourse = await _courseRepository.AddAsync(createCourseModel);
 
@@ -87,6 +88,7 @@ public class CourseService : ICourseService
         
         var updateCourseModel = _mapper.Map<CourseModel>(updateCourse);
         updateCourseModel.Id = existingCourse.Id;
+        updateCourseModel.UpdatedOn = DateTime.UtcNow;
         
         var updatedCourse = await _courseRepository.UpdateAsync(updateCourseModel);
         

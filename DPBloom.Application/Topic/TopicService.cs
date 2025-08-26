@@ -13,7 +13,8 @@ public class TopicService : ITopicService
     private readonly IValidator<CreateTopic> _createTopicValidator;
     private readonly IValidator<UpdateTopic> _updateTopicValidator;
 
-    public TopicService(ITopicRepository topicRepository, IMapper mapper, IValidator<CreateTopic> createTopicValidator, IValidator<UpdateTopic> updateTopicValidator)
+    public TopicService(ITopicRepository topicRepository, IMapper mapper, IValidator<CreateTopic> createTopicValidator,
+        IValidator<UpdateTopic> updateTopicValidator)
     {
         _topicRepository = topicRepository;
         _mapper = mapper;
@@ -32,9 +33,7 @@ public class TopicService : ITopicService
         var topic = await _topicRepository.GetByIdAsync(topicId);
 
         if (topic is null)
-        {
             throw new KeyNotFoundException($"Topic with ID {topicId} not found");
-        }
 
         return _mapper.Map<TopicDto>(topic);
     }
@@ -43,9 +42,7 @@ public class TopicService : ITopicService
     {
         var topics = await _topicRepository.GetAsync(predicate: t => t.Title == topicName);
         if (topics is null)
-        {
             throw new KeyNotFoundException($"Topic with Title {topicName} not found");
-        }
 
         return _mapper.Map<IEnumerable<TopicDto>>(topics);
     }
@@ -55,45 +52,47 @@ public class TopicService : ITopicService
         var topics = await _topicRepository.GetAsync(predicate: t => t.AuthorId.Equals(authorId));
 
         if (topics is null)
-        {
             throw new KeyNotFoundException($"Topics from Author {authorId} not found");
-        }
 
         return _mapper.Map<IEnumerable<TopicDto>>(topics);
     }
 
     public async Task<TopicDto> CreateAsync(CreateTopic createTopic)
     {
-       var validationResult = await _createTopicValidator.ValidateAsync(createTopic);
-       
-       if (!validationResult.IsValid)
-           throw new ValidationException(validationResult.Errors);
+        var validationResult = await _createTopicValidator.ValidateAsync(createTopic);
 
-       var topicCreate = _mapper.Map<TopicModel>(createTopic);
+        if (!validationResult.IsValid)
+            throw new ValidationException(validationResult.Errors);
 
-       if (await _topicRepository.ExistsAsync(tc =>
-               tc.Title == topicCreate.Title && tc.CourseId.Equals(createTopic.CourseId) && !tc.IsDeleted))
-           throw new InvalidOperationException($"Topic with name {topicCreate.Title} already exists in this course");
+        var createTopicModel = _mapper.Map<TopicModel>(createTopic);
+        createTopicModel.Id = Guid.NewGuid();
+        createTopicModel.CreatedOn = createTopicModel.UpdatedOn = DateTime.UtcNow;
 
-       var createdTopic = await _topicRepository.AddAsync(topicCreate);
+        if (await _topicRepository.ExistsAsync(tc =>
+                tc.Title == createTopicModel.Title && tc.CourseId.Equals(createTopic.CourseId) && !tc.IsDeleted))
+            throw new InvalidOperationException(
+                $"Topic with name {createTopicModel.Title} already exists in this course");
 
-       return _mapper.Map<TopicDto>(createdTopic);
+        var createdTopic = await _topicRepository.AddAsync(createTopicModel);
+
+        return _mapper.Map<TopicDto>(createdTopic);
     }
 
     public async Task<TopicDto> UpdateAsync(string topicId, UpdateTopic updateTopic)
     {
         var validationResult = await _updateTopicValidator.ValidateAsync(updateTopic);
-        
+
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
-        
+
         var existingTopic = await GetEntityByIdAsync(topicId);
-        
+
         var updateTopicModel = _mapper.Map<TopicModel>(updateTopic);
         updateTopicModel.Id = existingTopic.Id;
-        
+        updateTopicModel.UpdatedOn = DateTime.UtcNow;
+
         var updatedCourse = await _topicRepository.UpdateAsync(updateTopicModel);
-        
+
         return _mapper.Map<TopicDto>(updatedCourse);
     }
 
@@ -114,7 +113,7 @@ public class TopicService : ITopicService
 
         return _mapper.Map<TopicDto>(topic);
     }
-    
+
     public async Task<TopicModel> GetEntityByIdAsync(string id)
     {
         var topic = await _topicRepository.GetByIdAsync(id);

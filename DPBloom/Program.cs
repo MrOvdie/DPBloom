@@ -2,7 +2,6 @@ using AutoMapper;
 using DPBloom.Application.Course;
 using DPBloom.Application.Lecture;
 using DPBloom.Application.Topic;
-using DPBloom.Core;
 using DPBloom.Infrastructure;
 using DPBloom.Infrastructure.Course;
 using DPBloom.Infrastructure.Lecture;
@@ -26,6 +25,7 @@ builder.Services.AddIdentityApiEndpoints<ApplicationUser>()
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("LaptopConnection")));
 
+//TODO: add validation
 
 builder.Services.AddScoped<IdentityUser, ApplicationUser>();
 

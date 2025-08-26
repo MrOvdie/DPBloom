@@ -11,8 +11,8 @@ public class TopicDtoProfile : Profile
         CreateMap<TopicDto, TopicModel>().ReverseMap();
         CreateMap<CreateTopic, TopicModel>();
         CreateMap<UpdateTopic, TopicModel>()
-            .ForAllMembers(opt => 
-                opt.Condition((_, _, srcMember) => 
+            .ForAllMembers(opt =>
+                opt.Condition((_, _, srcMember) =>
                     srcMember != null));
     }
 }
