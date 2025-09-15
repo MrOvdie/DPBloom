@@ -4,6 +4,6 @@ public class CreateTopic
 {
     public string Title { get; set; }
     public string? Description { get; set; }
-    public string AuthorId { get; set; }
-    public string CourseId { get; set; }
+    public Guid AuthorId { get; set; }
+    public Guid CourseId { get; set; }
 }

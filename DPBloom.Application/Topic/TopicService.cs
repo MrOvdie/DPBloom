@@ -28,7 +28,7 @@ public class TopicService : ITopicService
         return _mapper.Map<IEnumerable<TopicDto>>(topics);
     }
 
-    public async Task<TopicDto> GetByIdAsync(string topicId)
+    public async Task<TopicDto> GetByIdAsync(Guid topicId)
     {
         var topic = await _topicRepository.GetByIdAsync(topicId);
 
@@ -47,7 +47,7 @@ public class TopicService : ITopicService
         return _mapper.Map<IEnumerable<TopicDto>>(topics);
     }
 
-    public async Task<IEnumerable<TopicDto>> GetTopicByAuthorAsync(string authorId)
+    public async Task<IEnumerable<TopicDto>> GetTopicByAuthorAsync(Guid authorId)
     {
         var topics = await _topicRepository.GetAsync(predicate: t => t.AuthorId.Equals(authorId));
 
@@ -78,7 +78,7 @@ public class TopicService : ITopicService
         return _mapper.Map<TopicDto>(createdTopic);
     }
 
-    public async Task<TopicDto> UpdateAsync(string topicId, UpdateTopic updateTopic)
+    public async Task<TopicDto> UpdateAsync(Guid topicId, UpdateTopic updateTopic)
     {
         var validationResult = await _updateTopicValidator.ValidateAsync(updateTopic);
 
@@ -96,7 +96,7 @@ public class TopicService : ITopicService
         return _mapper.Map<TopicDto>(updatedCourse);
     }
 
-    public async Task<TopicDto> DeleteAsync(string topicId)
+    public async Task<TopicDto> DeleteAsync(Guid topicId)
     {
         var topic = await GetEntityByIdAsync(topicId);
 
@@ -105,7 +105,7 @@ public class TopicService : ITopicService
         return _mapper.Map<TopicDto>(topic);
     }
 
-    public async Task<TopicDto> RestoreAsync(string topicId)
+    public async Task<TopicDto> RestoreAsync(Guid topicId)
     {
         var topic = await GetEntityByIdAsync(topicId);
 
@@ -114,7 +114,7 @@ public class TopicService : ITopicService
         return _mapper.Map<TopicDto>(topic);
     }
 
-    public async Task<TopicModel> GetEntityByIdAsync(string id)
+    public async Task<TopicModel> GetEntityByIdAsync(Guid id)
     {
         var topic = await _topicRepository.GetByIdAsync(id);
 

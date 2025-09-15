@@ -14,5 +14,5 @@ public class CourseDtoProfile : Profile
             .ForAllMembers(opt => 
                 opt.Condition((_, _, srcMember) => 
                     srcMember != null));
-    }
+    } //TODO: Check if it working correctly
 }

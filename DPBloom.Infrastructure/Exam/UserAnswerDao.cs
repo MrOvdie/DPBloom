@@ -8,6 +8,7 @@ public class UserAnswerDao : EntityDaoBase<Guid>
     public Guid QuestionId { get; set; }
     public ICollection<Guid>? SelectedOptionIds { get; set; }
     public string? FreeTextAnswer { get; set; }
+    public DateTime SubmittedAt { get; set; }
     
     public UserExamAttemptDao Attempt { get; set; }
     public QuestionDao Question { get; set; }

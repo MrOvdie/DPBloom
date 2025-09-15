@@ -1,4 +1,4 @@
-namespace DPBloom.Core;
+namespace DPBloom.Core.Base;
 
 public interface IEntityBase<TId>
 {

@@ -7,8 +7,8 @@ namespace DPBloom.Application.Topic;
 public interface ITopicService : ICrud<TopicDto>
 {
     Task<IEnumerable<TopicDto>> GetTopicByNameAsync(string topicName);
-    Task<IEnumerable<TopicDto>> GetTopicByAuthorAsync(string authorId);
+    Task<IEnumerable<TopicDto>> GetTopicByAuthorAsync(Guid authorId);
     Task<TopicDto> CreateAsync(CreateTopic createTopic);
-    Task<TopicDto> UpdateAsync(string topicId, UpdateTopic updateTopic);
-    Task<TopicModel> GetEntityByIdAsync(string id);
+    Task<TopicDto> UpdateAsync(Guid topicId, UpdateTopic updateTopic);
+    Task<TopicModel> GetEntityByIdAsync(Guid id);
 }

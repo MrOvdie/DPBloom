@@ -1,5 +1,6 @@
 ﻿using System.Linq.Expressions;
 using DPBloom.Core;
+using DPBloom.Core.Base;
 using DPBloom.Core.Specification;
 
 namespace DPBloom.Infrastructure.Base;
@@ -19,7 +20,7 @@ public interface IRepository<TEntityReturn, TEntity>
         List<Expression<Func<TEntity, object>>> includes = null,
         bool disableTracking = true);
     Task<IReadOnlyList<TEntityReturn>> GetAsync(ISpecification<TEntity> spec);
-    Task<TEntityReturn> GetByIdAsync(string id);
+    Task<TEntityReturn> GetByIdAsync(Guid id);
     Task<TEntityReturn> AddAsync(TEntityReturn entity);
     Task<TEntityReturn> UpdateAsync(TEntityReturn entity);
     Task DeleteAsync(TEntityReturn entity);

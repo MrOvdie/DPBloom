@@ -1,6 +1,8 @@
 ﻿using AutoMapper;
 using DPBloom.Core.Course;
 using DPBloom.Infrastructure.Base;
+using DPBloom.Infrastructure.Data;
+using DPBloom.Infrastructure.Exam;
 
 namespace DPBloom.Infrastructure.Course;
 

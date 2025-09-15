@@ -1,6 +1,4 @@
-using System.ComponentModel.DataAnnotations;
-
-namespace DPBloom.Core;
+namespace DPBloom.Core.Base;
 
 public class EntityBase<TId> : IEntityBase<TId>
 {

@@ -1,8 +1,9 @@
 ﻿using DPBloom.Infrastructure.Base;
+using DPBloom.Infrastructure.Extensions;
 
 namespace DPBloom.Infrastructure.Exam;
 
-public class QuestionDao : EntityDaoBase<Guid>
+public class QuestionDao : EntityDaoBase<Guid>, ISoftDelete
 {
     public string Text { get; set; }
     public Guid ExamId { get; set; }
@@ -11,6 +12,8 @@ public class QuestionDao : EntityDaoBase<Guid>
     public int Type { get; set; }
     public int Category { get; set; }
     public int CheckingType { get; set; }
+    public bool IsDeleted { get; set; }
+    public DateTime? DeletedOn { get; set; }
     
     public ExamDao Exam { get; set; }
     public ICollection<AnswerOptionDao> Options { get; set; }

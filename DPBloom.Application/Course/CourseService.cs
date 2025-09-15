@@ -28,7 +28,7 @@ public class CourseService : ICourseService
         return _mapper.Map<IEnumerable<CourseDto>>(courses);
     }
 
-    public async Task<CourseDto> GetByIdAsync(string id)
+    public async Task<CourseDto> GetByIdAsync(Guid id)
     {
         var course = await _courseRepository.GetByIdAsync(id);
 
@@ -48,7 +48,7 @@ public class CourseService : ICourseService
         return _mapper.Map<IEnumerable<CourseDto>>(courses);
     }
 
-    public async Task<IEnumerable<CourseDto>> GetCourseByAuthorAsync(string authorId)
+    public async Task<IEnumerable<CourseDto>> GetCourseByAuthorAsync(Guid authorId)
     {
         var courses = await _courseRepository.GetAsync(predicate: l => l.AuthorId.Equals(authorId));
 
@@ -77,7 +77,7 @@ public class CourseService : ICourseService
         return _mapper.Map<CourseDto>(createdCourse);
     }
 
-    public async Task<CourseDto> UpdateAsync(string courseId, UpdateCourse updateCourse)
+    public async Task<CourseDto> UpdateAsync(Guid courseId, UpdateCourse updateCourse)
     {
         var validationResult = await _updateCourseValidator.ValidateAsync(updateCourse);
         
@@ -95,7 +95,7 @@ public class CourseService : ICourseService
         return _mapper.Map<CourseDto>(updatedCourse);
     }
 
-    public async Task<CourseDto> DeleteAsync(string id)
+    public async Task<CourseDto> DeleteAsync(Guid id)
     {
         var course = await GetEntityByIdAsync(id);
         
@@ -104,7 +104,7 @@ public class CourseService : ICourseService
         return _mapper.Map<CourseDto>(course);
     }
 
-    public async Task<CourseDto> RestoreAsync(string id)
+    public async Task<CourseDto> RestoreAsync(Guid id)
     {
         var course = await GetEntityByIdAsync(id);
         
@@ -113,7 +113,7 @@ public class CourseService : ICourseService
         return _mapper.Map<CourseDto>(course);
     }
 
-    public async Task<CourseModel> GetEntityByIdAsync(string id)
+    public async Task<CourseModel> GetEntityByIdAsync(Guid id)
     {
         var lecture = await _courseRepository.GetByIdAsync(id);
 

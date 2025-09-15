@@ -4,6 +4,8 @@ using DPBloom.Application.Lecture;
 using DPBloom.Application.Topic;
 using DPBloom.Infrastructure;
 using DPBloom.Infrastructure.Course;
+using DPBloom.Infrastructure.Data;
+using DPBloom.Infrastructure.Exam;
 using DPBloom.Infrastructure.Lecture;
 using DPBloom.Infrastructure.Topic;
 using DPBloom.Infrastructure.User;

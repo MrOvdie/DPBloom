@@ -1,9 +1,9 @@
-namespace TestOfTesting.Models.Enums;
+namespace DPBloom.Core.Exam.Enums;
 
 public enum AttemptStatus
 {
-    Draft,
     InProgress,
     Submitted,
-    Expired
+    Expired,
+    Draft,
 }

@@ -3,6 +3,8 @@ using DPBloom.Core.Course;
 using DPBloom.Core.Topic;
 using DPBloom.Infrastructure.Base;
 using DPBloom.Infrastructure.Course;
+using DPBloom.Infrastructure.Data;
+using DPBloom.Infrastructure.Exam;
 using Microsoft.EntityFrameworkCore;
 
 namespace DPBloom.Infrastructure.Topic;

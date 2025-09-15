@@ -1,4 +1,6 @@
-﻿namespace DPBloom.Infrastructure.Extensions;
+﻿using DPBloom.Infrastructure.Exam;
+
+namespace DPBloom.Infrastructure.Extensions;
 
 public static class SoftDeleteExtension
 {
@@ -12,5 +14,35 @@ public static class SoftDeleteExtension
     {
         entity.IsDeleted = true;
         entity.DeletedOn = DateTime.UtcNow;
+    }
+    
+    public static void DeleteAggregate(this ExamDao exam)
+    {
+        exam.Delete();
+
+        foreach (var question in exam.Questions)
+        {
+            question.Delete();
+
+            foreach (var option in question.Options)
+            {
+                option.Delete();
+            }
+        }
+    }
+    
+    public static void UndoAggregate(this ExamDao exam)
+    {
+        exam.Undo();
+
+        foreach (var question in exam.Questions)
+        {
+            question.Undo();
+
+            foreach (var option in question.Options)
+            {
+                option.Undo();
+            }
+        }
     }
 }

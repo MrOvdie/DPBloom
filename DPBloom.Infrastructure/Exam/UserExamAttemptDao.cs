@@ -1,8 +1,9 @@
 ﻿using DPBloom.Infrastructure.Base;
+using DPBloom.Infrastructure.Extensions;
 
 namespace DPBloom.Infrastructure.Exam;
 
-public class UserExamAttemptDao : EntityDaoBase<Guid>
+public class UserExamAttemptDao : EntityDaoBase<Guid>, ISoftDelete
 {
     public Guid ExamId { get; set; }
     public Guid UserId { get; set; }
@@ -11,6 +12,8 @@ public class UserExamAttemptDao : EntityDaoBase<Guid>
     public DateTime StartedAt { get; set; }
     public DateTime FinishedAt { get; set; }
     public bool IsValid { get; set; }
+    public bool IsDeleted { get; set; }
+    public DateTime? DeletedOn { get; set; }
     
     public ExamDao Exam { get; set; }
     public ICollection<UserAnswerDao> Answers { get; set; }

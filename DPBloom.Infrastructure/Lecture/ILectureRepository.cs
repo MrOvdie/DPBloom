@@ -5,6 +5,6 @@ namespace DPBloom.Infrastructure.Lecture;
 
 public interface ILectureRepository : IRepository<LectureModel, LectureDao>
 {
-    Task<IReadOnlyList<LectureModel>> GetByCourseAsync(string courseId);
-    Task<IReadOnlyList<LectureModel>> GetByTopicAsync(string topicId);
+    Task<IReadOnlyList<LectureModel>> GetByCourseAsync(Guid courseId);
+    Task<IReadOnlyList<LectureModel>> GetByTopicAsync(Guid topicId);
 }

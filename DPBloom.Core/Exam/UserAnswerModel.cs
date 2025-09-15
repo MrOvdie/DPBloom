@@ -1,9 +1,12 @@
-﻿namespace DPBloom.Core.Exam;
+﻿using DPBloom.Core.Base;
+
+namespace DPBloom.Core.Exam;
 
 public class UserAnswerModel : EntityBase<Guid>
 {
-    public string AttemptId { get; set; }
-    public string QuestionId { get; set; }
-    public ICollection<string>? SelectedOptionIds { get; set; }
+    public Guid AttemptId { get; set; }
+    public Guid QuestionId { get; set; }
+    public IEnumerable<Guid>? SelectedOptionIds { get; set; }
     public string? FreeTextAnswer { get; set; }
+    public DateTime SubmittedAt { get; set; }
 }

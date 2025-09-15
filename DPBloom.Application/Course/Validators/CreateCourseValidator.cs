@@ -18,7 +18,8 @@ public class CreateCourseValidator : AbstractValidator<CreateCourse>
         RuleFor(cc => cc.Description)
             .Must(d => string.IsNullOrEmpty(d) || d.Length >= 3)
             .WithMessage("Description must be at least 3 characters long.");
-            RuleFor(cc => cc.AuthorId)
+        
+        RuleFor(cc => cc.AuthorId)
             .NotEmpty().WithMessage("AuthorId is required.");
     }
 }

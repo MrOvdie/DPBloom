@@ -1,6 +1,7 @@
 ﻿using System.Linq.Expressions;
 using AutoMapper;
 using DPBloom.Core;
+using DPBloom.Core.Base;
 using DPBloom.Core.Specification;
 using DPBloom.Infrastructure.Extensions;
 using Microsoft.EntityFrameworkCore;
@@ -15,7 +16,7 @@ public class RepositoryBase<TEntityReturn, TEntity, TContext> : IRepository<TEnt
     protected readonly TContext DbContext;
     protected readonly IMapper Mapper;
 
-    public RepositoryBase(TContext dbContext, IMapper mapper)
+    protected RepositoryBase(TContext dbContext, IMapper mapper)
     {
         DbContext = dbContext;
         Mapper = mapper;
@@ -72,7 +73,7 @@ public class RepositoryBase<TEntityReturn, TEntity, TContext> : IRepository<TEnt
         return Mapper.Map<IReadOnlyList<TEntityReturn>>(queryableResultWithSpec);
     }
 
-    public async Task<TEntityReturn> GetByIdAsync(string id)
+    public async Task<TEntityReturn> GetByIdAsync(Guid id)
     {
         var entity = await DbContext.Set<TEntity>().AsNoTracking()
             .FirstOrDefaultAsync(e => e.Id.Equals(id));
@@ -82,13 +83,11 @@ public class RepositoryBase<TEntityReturn, TEntity, TContext> : IRepository<TEnt
     public async Task<TEntityReturn> AddAsync(TEntityReturn entity)
     {
         var entityDao = Mapper.Map<TEntity>(entity);
-        
-        await DbContext.Set<TEntity>().AddAsync(entityDao);
-        
-        if (await DbContext.SaveChangesAsync() > 0)
-            return Mapper.Map<TEntityReturn>(entityDao);
 
-        return null;
+        await DbContext.Set<TEntity>().AddAsync(entityDao);
+
+        await DbContext.SaveChangesAsync();
+        return Mapper.Map<TEntityReturn>(entityDao);
     }
 
     public async Task<TEntityReturn> UpdateAsync(TEntityReturn entity)
@@ -96,12 +95,18 @@ public class RepositoryBase<TEntityReturn, TEntity, TContext> : IRepository<TEnt
         //TODO: check, if it working correctly
         var entityDao = Mapper.Map<TEntity>(entity);
         
+        DbContext.Update(entityDao);
+        
+        await DbContext.SaveChangesAsync();
+        
+        return Mapper.Map<TEntityReturn>(entityDao);
+        /*var entityDao = Mapper.Map<TEntity>(entity);
+
         DbContext.Entry(entityDao).State = EntityState.Modified;
 
-        if (await DbContext.SaveChangesAsync() > 0)
-            return Mapper.Map<TEntityReturn>(entityDao);
+        await DbContext.SaveChangesAsync();
 
-        return null;
+        return Mapper.Map<TEntityReturn>(entityDao);*/
     }
 
     public async Task DeleteAsync(TEntityReturn entity)
@@ -111,8 +116,7 @@ public class RepositoryBase<TEntityReturn, TEntity, TContext> : IRepository<TEnt
         var entityDao = Mapper.Map<TEntity>(entity);
 
         entityDao.Delete();
-
-        DbContext.Entry(entityDao).State = EntityState.Modified;
+        
         await DbContext.SaveChangesAsync();
     }
 
@@ -123,7 +127,7 @@ public class RepositoryBase<TEntityReturn, TEntity, TContext> : IRepository<TEnt
 
         entityDao.Undo();
 
-        DbContext.Entry(entityDao).State = EntityState.Modified;
+        //DbContext.Entry(entityDao).State = EntityState.Modified;
         await DbContext.SaveChangesAsync();
     }
 
