@@ -29,6 +29,10 @@ public class ExamDaoProfile : Profile
             .ReverseMap();
 
         CreateMap<QuestionResultModel, QuestionResultDao>().ReverseMap(); //TODO: Check this later
+        
+        CreateMap<AttemptResultModel, AttemptResultDao>().ReverseMap();
+
+        CreateMap<QuestionResultModel, QuestionResultDao>().ReverseMap(); 
 
         //CreateMap<AnswerOptionDao, AnswerOptionModel>();
         /*CreateMap<ExamModel, ExamDao>().ReverseMap();

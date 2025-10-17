@@ -6,4 +6,8 @@ public enum AttemptStatus
     Submitted,
     Expired,
     Draft,
+    Checked,
+    NotValidated,
+    ExpiredChecked,
+    ExpiredNotValidated,
 }

@@ -22,4 +22,6 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<QuestionDao> Questions { get; set; }
     public DbSet<AnswerOptionDao> AnswerOptions { get; set; }
     public DbSet<ExamDao> Exams { get; set; }
+    public DbSet<QuestionResultDao> AnswerReviews { get; set; }
+    public DbSet<AttemptResultDao> AttemptResults { get; set; }
 }

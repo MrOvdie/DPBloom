@@ -12,13 +12,15 @@ namespace DPBloom.Application.Exam;
 public class AttemptService : IAttemptService
 {
     private readonly IAttemptRepository _attemptRepository;
+    private readonly IAttemptResultRepository _attemptResultRepository;
     private readonly IExamRepository _examRepository;
     private readonly IExamService _examService;
     private readonly IMapper _mapper;
 
     public AttemptService(IAttemptRepository attemptRepository, IMapper mapper, IExamRepository examRepository,
-        IExamService examService)
+        IExamService examService, IAttemptResultRepository attemptResultRepository)
     {
+        _attemptResultRepository = attemptResultRepository;
         _attemptRepository = attemptRepository;
         _examRepository = examRepository;
         _examService = examService;
@@ -87,6 +89,11 @@ public class AttemptService : IAttemptService
         var attempt = await GetEntityByIdAsync(attemptId);
         var exam = await _examRepository.GetWithQuestionsAsync(attempt.ExamId);
 
+        if (attempt.Status is AttemptStatus.Submitted or AttemptStatus.Expired)
+        {
+            return;
+        }
+
         attempt.FinishedAt = DateTime.UtcNow;
 
         if (attempt.FinishedAt > exam.Exam.FinishesAt || attempt.FinishedAt - attempt.StartedAt > exam.Exam.Duration)
@@ -95,16 +102,42 @@ public class AttemptService : IAttemptService
             attempt.Status = AttemptStatus.Submitted;
 
         await _attemptRepository.FinishAsync(attempt);
-    }
 
+        try
+        {
+            await CalculateAndSaveResultAsync(attempt, exam);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error during automatic result calculation for attempt {attemptId}: {ex.Message}");
+        }
+    }
+    
     public async Task<AttemptResultDto> GetResultAsync(Guid attemptId)
     {
-        var attempt = await this.GetEntityByIdAsync(attemptId);
-        var exam = await _examService.GetEntityByIdAsync(attempt.ExamId);
+        var attempt = await GetEntityByIdAsync(attemptId);
+
+        if (attempt.AttemptResultId.HasValue)
+        {
+            var savedResult = await _attemptResultRepository.GetByIdAsync(attempt.AttemptResultId.Value);
+            return _mapper.Map<AttemptResultDto>(savedResult);
+        }
+
+        var exam = await _examRepository.GetWithQuestionsAsync(attempt.ExamId);
+        var resultModel = await CalculateAndSaveResultAsync(attempt, exam);
+        return _mapper.Map<AttemptResultDto>(resultModel);
+    }
+
+    private async Task<AttemptResultModel> CalculateAndSaveResultAsync(UserExamAttemptModel attempt, ExamAggregateModel exam)
+    {
+        if (attempt.AttemptResultId.HasValue)
+        {
+            return await _attemptResultRepository.GetByIdAsync(attempt.AttemptResultId.Value);
+        }
 
         var result = new AttemptResultDto
         {
-            AttemptId = attemptId,
+            AttemptId = attempt.Id,
             ExamId = exam.Exam.Id,
             TotalQuestions = exam.Questions.Count,
             Details = []
@@ -116,27 +149,27 @@ public class AttemptService : IAttemptService
 
         var tasks = exam.Questions.Select(async question =>
         {
-            QuestionResultDto review;
+            QuestionResultDto questionReview;
 
             if (question.CheckingType == CheckingType.Automatic)
             {
-                review = await CheckCorrectAnswersForQuestionAsync(attemptId, question.Id, exam);
+                questionReview = await CheckCorrectAnswersForQuestionAsync(attempt.Id, question.Id, exam);
             }
             else
             {
-                var manualReview = await _attemptRepository.FindManuallyReviewedAnswer(attemptId, question.Id);
+                var manualReview = await _attemptRepository.FindManuallyReviewedAnswer(attempt.Id, question.Id);
                 if (manualReview is null)
                     throw new InvalidOperationException("Cannot find manual review for this question");
 
-                review = _mapper.Map<QuestionResultDto>(manualReview);
+                questionReview = _mapper.Map<QuestionResultDto>(manualReview);
             }
 
-            return review;
+            return questionReview;
         });
 
-        var reviews = await Task.WhenAll(tasks);
+        var questionReviews = await Task.WhenAll(tasks);
 
-        foreach (var r in reviews)
+        foreach (var r in questionReviews)
         {
             result.Details.Add(r);
             score += r.Score;
@@ -153,10 +186,19 @@ public class AttemptService : IAttemptService
         result.Passed = exam.Exam.MinimalPassScore is null
                         || result.Score >= exam.Exam.MinimalPassScore.Value;
 
-        //result.Save(); //TODO: add saving of results to bd for future Bloom analyzing
+        var resultToSave = _mapper.Map<AttemptResultModel>(result);
+
+        await _attemptResultRepository.SaveAttemptResultAsync(attempt.Id, resultToSave);
         
-        return result;
+        attempt.AttemptResultId = resultToSave.Id;
+        attempt.Status = AttemptStatus.Checked; //TODO add checking status for unvalidated attempts (for example, if teacher had to check it manually)
+            
+        await _attemptRepository.UpdateAsync(attempt);
+
+        return resultToSave;
     }
+
+   
 
     private async Task<QuestionResultDto> CheckCorrectAnswersForQuestionAsync(Guid attemptId, Guid questionId,
         ExamAggregateModel exam)
@@ -222,6 +264,8 @@ public class AttemptService : IAttemptService
                 result.Score = result.IsCorrect ? question.ScoreWeight : 0;
                 break;
         }
+
+        //result.Save(); //TODO: add saving of results to bd for future Bloom analyzing
 
         return result;
     }

@@ -7,6 +7,7 @@ public interface IAttemptRepository : IRepository<UserExamAttemptModel, UserExam
 {
     Task<UserExamAttemptModel> GetWithAnswersAsync(Guid attemptId);
     Task<List<UserExamAttemptModel>> GetByUserAsync(Guid userId);
+    Task<AttemptResultModel> GetAttemptResultByIdAsync(Guid? attemptResultId);
 
     Task<UserExamAttemptModel> StartAsync(UserExamAttemptModel model);
     Task SubmitAnswerAsync(Guid attemptId, UserAnswerModel answer);

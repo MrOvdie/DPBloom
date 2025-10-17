@@ -14,4 +14,6 @@ public class AttemptResultModel : EntityBase<Guid>
     public double ScorePercentage { get; set; }
     
     public bool Passed { get; set; }
+    
+    public List<QuestionResultModel> Details { get; set; }
 }

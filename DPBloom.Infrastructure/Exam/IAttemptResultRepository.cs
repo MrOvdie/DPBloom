@@ -5,7 +5,7 @@ namespace DPBloom.Infrastructure.Exam;
 
 public interface IAttemptResultRepository : IRepository<AttemptResultModel, UserExamAttemptDao>
 {
-    Task SaveManualQuestionAnswerReviewAsync(Guid attemptId, Guid questionId, QuestionResultModel model);
+    Task SaveManualQuestionAnswerReviewAsync(Guid attemptResultId, QuestionResultModel model);
     Task SaveAttemptResultAsync(Guid attemptId, AttemptResultModel model);
         
     //     Task<ExamAggregateModel> GetWithQuestionsAsync(Guid examId);

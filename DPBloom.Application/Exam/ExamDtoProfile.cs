@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using DPBloom.Application.Exam.Contracts;
 using DPBloom.Core.Exam;
 using TestOfTesting.Models.Enums;
 using Type = TestOfTesting.Models.Enums.Type;
@@ -51,6 +52,9 @@ public class ExamDtoProfile : Profile
                 });
 
             CreateMap<QuestionResultModel, QuestionResultDto>();
+            
+            CreateMap<AttemptResultDto, AttemptResultModel>();
+            CreateMap<QuestionResultDto, QuestionResultModel>();
             /*//CreateMap<ExamModel, ExamDto>().ReverseMap();
 
             // CreateMap<UserExamAttemptModel, UserExamAttemptDto>()

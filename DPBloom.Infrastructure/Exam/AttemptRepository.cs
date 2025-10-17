@@ -34,6 +34,13 @@ public class AttemptRepository : RepositoryBase<UserExamAttemptModel, UserExamAt
         return Mapper.Map<List<UserExamAttemptModel>>(examAttempts);
     }
 
+    public async Task<AttemptResultModel> GetAttemptResultByIdAsync(Guid? attemptResultId)
+    {
+        var attemptResult = await DbContext.AttemptResults.FindAsync(attemptResultId);
+        
+        return Mapper.Map<AttemptResultModel>(attemptResult);
+    }
+
     public async Task<UserExamAttemptModel> StartAsync(UserExamAttemptModel model)
     {
        var startAttempt = Mapper.Map<UserExamAttemptDao>(model);

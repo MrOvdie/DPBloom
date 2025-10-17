@@ -6,6 +6,7 @@ namespace DPBloom.Infrastructure.Exam;
 public class UserExamAttemptDao : EntityDaoBase<Guid>, ISoftDelete
 {
     public Guid ExamId { get; set; }
+    public Guid? AttemptResultId { get; set; }
     public Guid UserId { get; set; }
     public int Status { get; set; }
     public double? TotalScore { get; set; }

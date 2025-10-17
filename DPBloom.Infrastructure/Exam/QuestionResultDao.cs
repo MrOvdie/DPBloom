@@ -6,6 +6,7 @@ namespace DPBloom.Infrastructure.Data;
 public class QuestionResultDao : EntityDaoBase<Guid>
 {
     public Guid AttemptId { get; set; }
+    public Guid AttemptResultId { get; set; }
     public Guid QuestionId { get; set; }
     public string Text { get; set; }
     public double Score { get; set; }
