@@ -1,8 +1,6 @@
 ﻿using AutoMapper;
 using DPBloom.Application.Exam.Contracts;
-using DPBloom.Application.Lecture.Contracts;
 using DPBloom.Core.Exam;
-using DPBloom.Infrastructure.Exam;
 using FluentValidation;
 using TestOfTesting.DTOs;
 
@@ -41,7 +39,7 @@ public class ExamService : IExamService
             throw new ValidationException(validationResult.Errors);
 
         if (await _examRepository.ExistsAsync(e =>
-                e.Title == createExam.Title && e.CourseId.Equals(createExam.CourseId) && !e.IsDeleted))
+                e.Title == createExam.Title && e.CourseId.Equals(createExam.CourseId)/* && !e.IsDeleted*/))
             throw new InvalidOperationException($"Exam with name {createExam.Title} already exists");
 
         var createExamModel = _mapper.Map<ExamAggregateModel>(createExam);

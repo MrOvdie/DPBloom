@@ -8,7 +8,7 @@ public class CourseDao : EntityDaoBase<Guid>, ISoftDelete
 {
     public string Title { get; set; }
     public string? Description { get; set; }
-    public string AuthorId { get; set; }
+    public Guid AuthorId { get; set; }
     public bool IsDeleted { get; set; }
     public DateTime? DeletedOn { get; set; }
 

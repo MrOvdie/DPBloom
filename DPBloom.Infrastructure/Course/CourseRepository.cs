@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using DPBloom.Application.Course;
 using DPBloom.Core.Course;
 using DPBloom.Infrastructure.Base;
 using DPBloom.Infrastructure.Data;

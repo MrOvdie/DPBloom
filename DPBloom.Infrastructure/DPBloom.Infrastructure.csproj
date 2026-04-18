@@ -18,7 +18,8 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\DPBloom.Core\DPBloom.Core.csproj" />
+        <ProjectReference Include="..\DPBloom.Core\DPBloom.Core.csproj" />
+        <ProjectReference Include="..\DPBloom.Application\DPBloom.Application.csproj" />
     </ItemGroup>
 
     <ItemGroup>

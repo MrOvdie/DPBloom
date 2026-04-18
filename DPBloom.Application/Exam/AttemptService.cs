@@ -51,7 +51,7 @@ public class AttemptService : IAttemptService
         return startedModel.Id;
     }
 
-    public async Task SubmitAnswerAsync(Guid attemptId, SubmitAnswerDto answer)
+    public async Task SubmitAnswerAsync(/*Guid attemptId, */SubmitAnswerDto answer)
     {
         //TODO: add submit answer validator
 
@@ -63,7 +63,7 @@ public class AttemptService : IAttemptService
         answerModel.CreatedOn = answerModel.UpdatedOn = DateTime.UtcNow;
         answerModel.SubmittedAt = DateTime.UtcNow;
 
-        await _attemptRepository.SubmitAnswerAsync(attemptId, answerModel);
+        await _attemptRepository.SubmitAnswerAsync(answer.AttemptId, answerModel);
     }
 
     public async Task SaveAllAnswersAsync(Guid attemptId, List<SubmitAnswerDto> answers)
@@ -197,9 +197,7 @@ public class AttemptService : IAttemptService
 
         return resultToSave;
     }
-
-   
-
+    
     private async Task<QuestionResultDto> CheckCorrectAnswersForQuestionAsync(Guid attemptId, Guid questionId,
         ExamAggregateModel exam)
     {
@@ -264,8 +262,6 @@ public class AttemptService : IAttemptService
                 result.Score = result.IsCorrect ? question.ScoreWeight : 0;
                 break;
         }
-
-        //result.Save(); //TODO: add saving of results to bd for future Bloom analyzing
 
         return result;
     }

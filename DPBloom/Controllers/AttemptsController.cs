@@ -1,4 +1,5 @@
 ﻿using System.Security.Claims;
+using DPBloom.Application.Exam;
 using DPBloom.Application.Exam.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

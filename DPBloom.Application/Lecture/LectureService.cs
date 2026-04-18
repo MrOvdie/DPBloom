@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using DPBloom.Application.Exam;
 using DPBloom.Application.Lecture.Contracts;
 using DPBloom.Core.Lecture;
 using DPBloom.Infrastructure.Lecture;
@@ -89,7 +90,7 @@ public class LectureService : ILectureService
             throw new ValidationException(validationResult.Errors);
 
         if (await _lectureRepository.ExistsAsync(l =>
-                l.Title == createLecture.Title && l.CourseId.Equals(createLecture.CourseId) && !l.IsDeleted))
+                l.Title == createLecture.Title && l.CourseId.Equals(createLecture.CourseId) /*&& !l.IsDeleted*/))
             throw new InvalidOperationException($"Lecture with name {createLecture.Title} already exists in this course");
 
         var createLectureModel = _mapper.Map<LectureModel>(createLecture);

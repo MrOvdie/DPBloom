@@ -1,4 +1,6 @@
 ﻿using AutoMapper;
+using DPBloom.Application.Exam;
+using DPBloom.Application.Lecture;
 using DPBloom.Core.Lecture;
 using DPBloom.Infrastructure.Base;
 using DPBloom.Infrastructure.Data;
@@ -19,7 +21,7 @@ public class LectureRepository : RepositoryBase<LectureModel, LectureDao, Applic
         var lecturesByCourse = await DbContext.Set<LectureDao>()
             .Where(l => l.CourseId.Equals(courseId))
             .ToListAsync();
-        return Mapper.Map<IReadOnlyList<LectureModel>>(lecturesByCourse);
+       return Mapper.Map<IReadOnlyList<LectureModel>>(lecturesByCourse);
     }
 
     public async Task<IReadOnlyList<LectureModel>> GetByTopicAsync(Guid topicId)

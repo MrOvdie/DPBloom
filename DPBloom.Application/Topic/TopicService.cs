@@ -69,7 +69,7 @@ public class TopicService : ITopicService
         createTopicModel.CreatedOn = createTopicModel.UpdatedOn = DateTime.UtcNow;
 
         if (await _topicRepository.ExistsAsync(tc =>
-                tc.Title == createTopicModel.Title && tc.CourseId.Equals(createTopic.CourseId) && !tc.IsDeleted))
+                tc.Title == createTopicModel.Title && tc.CourseId.Equals(createTopic.CourseId) /*&& !tc.IsDeleted*/))
             throw new InvalidOperationException(
                 $"Topic with name {createTopicModel.Title} already exists in this course");
 

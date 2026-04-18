@@ -1,8 +1,8 @@
 using AutoMapper;
 using DPBloom.Application.Course;
+using DPBloom.Application.Exam;
 using DPBloom.Application.Lecture;
 using DPBloom.Application.Topic;
-using DPBloom.Infrastructure;
 using DPBloom.Infrastructure.Course;
 using DPBloom.Infrastructure.Data;
 using DPBloom.Infrastructure.Exam;
@@ -37,6 +37,11 @@ builder.Services.AddAutoMapper(config =>
         new LectureDaoProfile(), new CourseDaoProfile(), new TopicDaoProfile(), 
         new LectureDtoProfile(), new TopicDtoProfile(), new CourseDtoProfile()
     }));
+
+builder.Services.AddScoped<IExamRepository, ExamRepository>();
+builder.Services.AddScoped<ICourseRepository, CourseRepository>();
+builder.Services.AddScoped<ILectureRepository, LectureRepository>();
+builder.Services.AddScoped<ITopicRepository, TopicRepository>();
 
 builder.Services.AddOpenApi();
 

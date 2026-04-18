@@ -1,7 +1,6 @@
 ﻿using AutoMapper;
 using DPBloom.Application.Course.Contracts;
 using DPBloom.Core.Course;
-using DPBloom.Infrastructure.Course;
 using FluentValidation;
 
 namespace DPBloom.Application.Course;
@@ -65,7 +64,7 @@ public class CourseService : ICourseService
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
 
-        if (await _courseRepository.ExistsAsync(c => c.Title == createCourse.Title && !c.IsDeleted ))
+        if (await _courseRepository.ExistsAsync(c => c.Title == createCourse.Title /*&& !c.IsDeleted */))
             throw new InvalidOperationException($"Course with name {createCourse.Title} already exists");
 
         var createCourseModel = _mapper.Map<CourseModel>(createCourse);

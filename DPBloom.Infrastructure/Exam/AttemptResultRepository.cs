@@ -1,5 +1,6 @@
 ﻿using System.Data.Entity;
 using AutoMapper;
+using DPBloom.Application.Exam;
 using DPBloom.Core.Exam;
 using DPBloom.Infrastructure.Base;
 using DPBloom.Infrastructure.Data;
@@ -43,5 +44,12 @@ public class AttemptResultRepository : RepositoryBase<AttemptResultModel, UserEx
         await DbContext.AttemptResults.AddAsync(attemptResultDao);
 
         await DbContext.SaveChangesAsync();
+    }
+
+    public async Task<AttemptResultModel> GetAttemptResultByIdAsync(Guid? attemptResultId)
+    {
+        var attemptResult = await DbContext.AttemptResults.FindAsync(attemptResultId);
+        
+        return Mapper.Map<AttemptResultModel>(attemptResult);
     }
 }

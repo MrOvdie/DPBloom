@@ -1,4 +1,5 @@
-﻿using DPBloom.Infrastructure.Course;
+﻿using DPBloom.Infrastructure.Bloom;
+using DPBloom.Infrastructure.Course;
 using DPBloom.Infrastructure.Exam;
 using DPBloom.Infrastructure.Lecture;
 using DPBloom.Infrastructure.Topic;
@@ -17,11 +18,15 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<CourseDao> Courses { get; set; }
     
     public DbSet<UserExamAttemptDao> UserExamAttempts { get; set; }
-    public DbSet<QuestionResultDao> QuestionResults { get; set; }
     public DbSet<UserAnswerDao> UserAnswers { get; set; }
     public DbSet<QuestionDao> Questions { get; set; }
     public DbSet<AnswerOptionDao> AnswerOptions { get; set; }
+
     public DbSet<ExamDao> Exams { get; set; }
-    public DbSet<QuestionResultDao> AnswerReviews { get; set; }
+    public DbSet<QuestionResultDao> QuestionResults { get; set; }
     public DbSet<AttemptResultDao> AttemptResults { get; set; }
+    
+    public DbSet<BloomAnalysisDao> BloomAnalyses { get; set; }
+    public DbSet<BloomLevelPerformanceDao> BloomLevelPerformances { get; set; }
+    public DbSet<RecommendedMaterialDao> RecommendedMaterials { get; set; }
 }

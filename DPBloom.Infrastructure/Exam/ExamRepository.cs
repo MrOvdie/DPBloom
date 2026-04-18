@@ -1,10 +1,10 @@
 ﻿using AutoMapper;
+using DPBloom.Application.Exam;
 using DPBloom.Core.Exam;
 using DPBloom.Infrastructure.Base;
 using DPBloom.Infrastructure.Data;
 using DPBloom.Infrastructure.Extensions;
 using Microsoft.EntityFrameworkCore;
-using RefactorThis.GraphDiff;
 
 namespace DPBloom.Infrastructure.Exam;
 
@@ -14,7 +14,7 @@ public class ExamRepository : RepositoryBase<ExamModel, ExamDao, ApplicationDbCo
     {
     }
 
-    public async Task<ExamAggregateModel> GetWithQuestionsAsync(Guid examId)
+    public async Task<ExamAggregateModel?> GetWithQuestionsAsync(Guid examId)
     {
         var examDao = await DbContext.Exams
             .Include(e => e.Questions)
@@ -27,8 +27,7 @@ public class ExamRepository : RepositoryBase<ExamModel, ExamDao, ApplicationDbCo
     public async Task<List<UserAnswerModel>> GetUserAnswersForQuestionAsync(Guid attemptId, Guid questionId)
     {
         var answers = await DbContext.UserAnswers
-            .Where(ao 
-                => ao.AttemptId.Equals(attemptId) && ao.QuestionId.Equals(questionId))
+            .Where(ao => ao.AttemptId.Equals(attemptId) && ao.QuestionId.Equals(questionId))
             .ToListAsync();
 
         return Mapper.Map<List<UserAnswerModel>>(answers);
@@ -41,9 +40,7 @@ public class ExamRepository : RepositoryBase<ExamModel, ExamDao, ApplicationDbCo
         DbContext.Exams.Add(examDao);
         await DbContext.SaveChangesAsync();
 
-        var resultAggregate = MapDaoToExamAggregate(examDao);
-
-        return resultAggregate;
+        return MapDaoToExamAggregate(examDao);
     }
 
     public async Task<ExamAggregateModel> UpdateExamWithDetailsAsync(ExamAggregateModel model)
@@ -54,13 +51,10 @@ public class ExamRepository : RepositoryBase<ExamModel, ExamDao, ApplicationDbCo
             .FirstOrDefaultAsync(e => e.Id.Equals(model.Exam.Id));
 
         if (existingExamDao == null)
-        {
             throw new KeyNotFoundException($"Exam with ID {model.Exam.Id} not found.");
-        }
 
         Mapper.Map(model.Exam, existingExamDao);
 
-        // Синхронізація колекцій за допомогою вашого методу розширення
         var newQuestionsDao = Mapper.Map<List<QuestionDao>>(model.Questions);
 
         existingExamDao.Questions.SyncCollection(
@@ -68,12 +62,11 @@ public class ExamRepository : RepositoryBase<ExamModel, ExamDao, ApplicationDbCo
             q => q.Id,
             (dbItem, incomingItem) =>
             {
-                // Action: оновлення існуючого питання
                 Mapper.Map(incomingItem, dbItem);
-                // Рекурсивна синхронізація відповідей
                 var newOptionsDao =
                     Mapper.Map<ICollection<AnswerOptionDao>>(
                         model.AnswerOptions.Where(ao => ao.QuestionId.Equals(incomingItem.Id)));
+
                 dbItem.Options.SyncCollection(
                     newOptionsDao,
                     o => o.Id,
@@ -90,18 +83,14 @@ public class ExamRepository : RepositoryBase<ExamModel, ExamDao, ApplicationDbCo
     public async Task DeleteExamWithDetailsAsync(ExamAggregateModel model)
     {
         var examDao = MapExamAggregateToDao(model);
-
         examDao.DeleteAggregate();
-
         await DbContext.SaveChangesAsync();
     }
 
     public async Task RestoreExamWithDetailsAsync(ExamAggregateModel model)
     {
         var examDao = MapExamAggregateToDao(model);
-
         examDao.UndoAggregate();
-
         await DbContext.SaveChangesAsync();
     }
 
@@ -145,9 +134,7 @@ public class ExamRepository : RepositoryBase<ExamModel, ExamDao, ApplicationDbCo
 
             var answerOptions = Mapper.Map<List<AnswerOptionModel>>(questionDao.Options);
             if (answerOptions is not null && answerOptions.Count != 0)
-            {
                 examAggregate.AnswerOptions.AddRange(answerOptions);
-            }
         }
 
         return examAggregate;

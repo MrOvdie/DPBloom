@@ -1,12 +1,14 @@
-﻿using DPBloom.Core.Exam;
-using DPBloom.Infrastructure.Base;
+﻿using DPBloom.Application.Base;
+using DPBloom.Core.Exam;
+using DPBloom.Infrastructure.Exam;
 
-namespace DPBloom.Infrastructure.Exam;
+namespace DPBloom.Application.Exam;
 
-public interface IAttemptResultRepository : IRepository<AttemptResultModel, UserExamAttemptDao>
+public interface IAttemptResultRepository : IRepository<AttemptResultModel>
 {
     Task SaveManualQuestionAnswerReviewAsync(Guid attemptResultId, QuestionResultModel model);
     Task SaveAttemptResultAsync(Guid attemptId, AttemptResultModel model);
+    Task<AttemptResultModel> GetAttemptResultByIdAsync(Guid? attemptResultId);
         
     //     Task<ExamAggregateModel> GetWithQuestionsAsync(Guid examId);
     // Task<List<UserAnswerModel>> GetUserAnswersForQuestionAsync(Guid attemptId, Guid questionId);

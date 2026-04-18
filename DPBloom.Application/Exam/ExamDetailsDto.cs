@@ -4,6 +4,7 @@ namespace DPBloom.Application.Exam;
 
 public class ExamDetailsDto : ModelBase<Guid>
 {
+    //TODO: add UserId
     public string Title { get; set; }
     public string? Description { get; set; }
     public Guid CourseId { get; set; }
