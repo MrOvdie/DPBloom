@@ -1,6 +1,5 @@
 ﻿using DPBloom.Application.Base;
 using DPBloom.Core.Lecture;
-using DPBloom.Infrastructure.Lecture;
 
 namespace DPBloom.Application.Lecture;
 

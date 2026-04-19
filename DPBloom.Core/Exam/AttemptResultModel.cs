@@ -6,6 +6,7 @@ public class AttemptResultModel : EntityBase<Guid>
 {
     public Guid AttemptId { get; set; }
     public Guid ExamId { get; set; }
+    public Guid UserId { get; set; }
 
     public int TotalQuestions { get; set; }
     public int CorrectAnswers { get; set; }

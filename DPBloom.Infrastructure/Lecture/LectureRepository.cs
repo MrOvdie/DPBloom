@@ -21,7 +21,7 @@ public class LectureRepository : RepositoryBase<LectureModel, LectureDao, Applic
         var lecturesByCourse = await DbContext.Set<LectureDao>()
             .Where(l => l.CourseId.Equals(courseId))
             .ToListAsync();
-       return Mapper.Map<IReadOnlyList<LectureModel>>(lecturesByCourse);
+       return Mapper.Map<List<LectureModel>>(lecturesByCourse);
     }
 
     public async Task<IReadOnlyList<LectureModel>> GetByTopicAsync(Guid topicId)
@@ -29,6 +29,6 @@ public class LectureRepository : RepositoryBase<LectureModel, LectureDao, Applic
         var lecturesByTopic = await DbContext.Set<LectureDao>()
             .Where(l => l.TopicId.Equals(topicId))
             .ToListAsync();
-        return Mapper.Map<IReadOnlyList<LectureModel>>(lecturesByTopic);
+        return Mapper.Map<List<LectureModel>>(lecturesByTopic);
     }
 }

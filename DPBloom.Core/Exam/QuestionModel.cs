@@ -1,4 +1,5 @@
 ﻿using DPBloom.Core.Base;
+using DPBloom.Core.Exam.Enums;
 using TestOfTesting.Models.Enums;
 using Type = TestOfTesting.Models.Enums.Type;
 
@@ -11,6 +12,6 @@ public class QuestionModel : EntityBase<Guid>
     public int? Position { get; set; }
     public double ScoreWeight { get; set; }
     public Type Type { get; set; }
-    public Category Category { get; set; }
+    public BloomLevel Level { get; set; }
     public CheckingType CheckingType { get; set; }
 }

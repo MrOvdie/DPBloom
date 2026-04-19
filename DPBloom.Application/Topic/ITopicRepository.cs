@@ -1,6 +1,5 @@
 ﻿using DPBloom.Application.Base;
 using DPBloom.Core.Topic;
-using DPBloom.Infrastructure.Topic;
 
 namespace DPBloom.Application.Topic;
 

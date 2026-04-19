@@ -1,7 +1,6 @@
 ﻿using AutoMapper;
 using DPBloom.Application.Topic.Contracts;
 using DPBloom.Core.Topic;
-using DPBloom.Infrastructure.Topic;
 using FluentValidation;
 
 namespace DPBloom.Application.Topic;

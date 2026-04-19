@@ -12,7 +12,6 @@
 
     <ItemGroup>
       <ProjectReference Include="..\DPBloom.Core\DPBloom.Core.csproj" />
-      <ProjectReference Include="..\DPBloom.Infrastructure\DPBloom.Infrastructure.csproj" />
     </ItemGroup>
 
     <ItemGroup>

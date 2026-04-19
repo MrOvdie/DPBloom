@@ -1,8 +1,6 @@
 ﻿using AutoMapper;
-using DPBloom.Application.Exam;
 using DPBloom.Application.Lecture.Contracts;
 using DPBloom.Core.Lecture;
-using DPBloom.Infrastructure.Lecture;
 using FluentValidation;
 
 namespace DPBloom.Application.Lecture;

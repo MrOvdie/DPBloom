@@ -46,10 +46,33 @@ public class AttemptResultRepository : RepositoryBase<AttemptResultModel, UserEx
         await DbContext.SaveChangesAsync();
     }
 
-    public async Task<AttemptResultModel> GetAttemptResultByIdAsync(Guid? attemptResultId)
+    public async Task<AttemptResultModel> GetAttemptResultByIdAsync(Guid attemptResultId)
     {
         var attemptResult = await DbContext.AttemptResults.FindAsync(attemptResultId);
         
         return Mapper.Map<AttemptResultModel>(attemptResult);
+    }
+
+    public async Task<AttemptResultModel> GetAttemptResultByExamIdAsync(Guid examId)
+    {
+        var attemptResult = await DbContext.AttemptResults.FirstOrDefaultAsync(ar => ar.ExamId.Equals(examId));
+        
+        return Mapper.Map<AttemptResultModel>(attemptResult);
+    }
+
+    public async Task<IReadOnlyList<AttemptResultModel>> GetAllAttemptsResultsByUserAsync(Guid userId)
+    {
+        var attemptsResultsDao = await DbContext.AttemptResults
+            .Where(ar => ar.UserId.Equals(userId)).ToListAsync();
+        
+        return Mapper.Map<List<AttemptResultModel>>(attemptsResultsDao);
+    }
+
+    public async Task<IReadOnlyList<AttemptResultModel>> GetAllAttemptsResultsByExamAsync(Guid examId)
+    {
+        var attemptsResultsDao = await DbContext.AttemptResults
+            .Where(ar => ar.ExamId.Equals(examId)).ToListAsync();
+        
+        return Mapper.Map<List<AttemptResultModel>>(attemptsResultsDao);
     }
 }

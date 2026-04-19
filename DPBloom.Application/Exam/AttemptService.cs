@@ -2,8 +2,6 @@
 using DPBloom.Application.Exam.Contracts;
 using DPBloom.Core.Exam;
 using DPBloom.Core.Exam.Enums;
-using DPBloom.Infrastructure.Exam;
-using DPBloom.Infrastructure.Lecture;
 using TestOfTesting.Models.Enums;
 using Type = TestOfTesting.Models.Enums.Type;
 

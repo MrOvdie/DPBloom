@@ -14,6 +14,14 @@ public class ExamRepository : RepositoryBase<ExamModel, ExamDao, ApplicationDbCo
     {
     }
 
+    public async Task<IReadOnlyList<ExamModel>> GetByCourseAsync(Guid courseId)
+    {
+        var examsDao = await DbContext.Exams
+            .Where(e => e.CourseId.Equals(courseId)).ToListAsync();
+        
+        return Mapper.Map<List<ExamModel>>(examsDao);
+    }
+
     public async Task<ExamAggregateModel?> GetWithQuestionsAsync(Guid examId)
     {
         var examDao = await DbContext.Exams
@@ -24,7 +32,7 @@ public class ExamRepository : RepositoryBase<ExamModel, ExamDao, ApplicationDbCo
         return Mapper.Map<ExamAggregateModel>(examDao);
     }
 
-    public async Task<List<UserAnswerModel>> GetUserAnswersForQuestionAsync(Guid attemptId, Guid questionId)
+    public async Task<IReadOnlyList<UserAnswerModel>> GetUserAnswersForQuestionAsync(Guid attemptId, Guid questionId)
     {
         var answers = await DbContext.UserAnswers
             .Where(ao => ao.AttemptId.Equals(attemptId) && ao.QuestionId.Equals(questionId))

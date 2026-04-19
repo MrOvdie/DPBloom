@@ -16,10 +16,18 @@ public class BloomRepository : RepositoryBase<BloomAnalysisModel, BloomAnalysisD
     
     public async Task<BloomAnalysisModel> GetByAttemptResultIdAsync(Guid attemptResultId)
     {
-        var bloomResul = await DbContext.BloomAnalyses
+        var bloomResult = await DbContext.BloomAnalyses
             .FirstOrDefaultAsync(b => b.AttemptResultId.Equals(attemptResultId));
         
-        return Mapper.Map<BloomAnalysisModel>(bloomResul);
+        return Mapper.Map<BloomAnalysisModel>(bloomResult);
+    }
+
+    public async Task<IReadOnlyList<BloomAnalysisModel>> GetByAttemptResultIdsAsync(IReadOnlyList<Guid> attemptResultIds)
+    {
+        var bloomResul = await DbContext.BloomAnalyses
+            .Where(b => b.AttemptResultId.Equals(attemptResultIds)).ToListAsync();
+        
+        return Mapper.Map<List<BloomAnalysisModel>>(bloomResul);
     }
 
     public async Task<BloomAnalysisModel> AddAnalysisAsync(BloomAnalysisModel analysis)

@@ -23,7 +23,7 @@ public class TopicRepository : RepositoryBase<TopicModel,TopicDao, ApplicationDb
             .Where(l => l.CourseId.Equals(courseId))
             .ToListAsync();
         
-        return Mapper.Map<IReadOnlyList<TopicModel>>(topicsByCourse);
+        return Mapper.Map<List<TopicModel>>(topicsByCourse);
     }
 
     public async Task<IReadOnlyList<TopicModel>> GetByAuthorAsync(string authorId)
@@ -32,6 +32,6 @@ public class TopicRepository : RepositoryBase<TopicModel,TopicDao, ApplicationDb
             .Where(l => l.AuthorId.Equals(authorId))
             .ToListAsync();
         
-        return Mapper.Map<IReadOnlyList<TopicModel>>(topicsByAuthor);
+        return Mapper.Map<List<TopicModel>>(topicsByAuthor);
     }
 }

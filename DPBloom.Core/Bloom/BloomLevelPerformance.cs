@@ -1,10 +1,11 @@
-﻿using TestOfTesting.Models.Enums;
+﻿using DPBloom.Core.Exam.Enums;
+using TestOfTesting.Models.Enums;
 
 namespace DPBloom.Core.Bloom;
 
 public class BloomLevelPerformance
 {
-    public Category Level { get; set; }
+    public BloomLevel Level { get; set; }
     public double ScorePercentage { get; set; }
     public int CorrectAnswers { get; set; }
     public int TotalQuestions { get; set; }

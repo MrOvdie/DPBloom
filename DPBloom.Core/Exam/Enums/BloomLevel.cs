@@ -1,6 +1,6 @@
-﻿namespace TestOfTesting.Models.Enums;
+﻿namespace DPBloom.Core.Exam.Enums;
 
-public enum Category
+public enum BloomLevel
 {
     Evaluating,
     Creating, 
