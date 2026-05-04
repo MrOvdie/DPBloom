@@ -7,10 +7,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Folder Include="User\" />
-    </ItemGroup>
-
-    <ItemGroup>
       <ProjectReference Include="..\DPBloom.Core\DPBloom.Core.csproj" />
     </ItemGroup>
 
@@ -18,6 +14,10 @@
       <PackageReference Include="AutoMapper" Version="15.0.1" />
       <PackageReference Include="FluentValidation" Version="12.0.0" />
       <PackageReference Include="MediatR" Version="13.0.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="User\" />
     </ItemGroup>
 
 </Project>

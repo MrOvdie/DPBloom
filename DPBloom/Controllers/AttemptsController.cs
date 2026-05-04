@@ -3,9 +3,8 @@ using DPBloom.Application.Exam;
 using DPBloom.Application.Exam.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using TestOfTesting.Services.Interfaces;
 
-namespace TestOfTesting.Controllers;
+namespace DPBloom.Controllers;
 
 [ApiController]
 [Route("api/attempts")]
@@ -16,28 +15,28 @@ public class AttemptsController : ControllerBase
     public AttemptsController(IAttemptService svc) => _svc = svc;
 
     [HttpPost("start/{examId}")]
-    public async Task<IActionResult> Start(int examId)
+    public async Task<IActionResult> Start(Guid examId)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        Guid userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
         var attemptId = await _svc.StartAsync(userId, examId);
         return Ok(attemptId);
     }
 
     [HttpPost("{attemptId}/answer")]
-    public async Task<IActionResult> Submit(int attemptId, SubmitAnswerDto dto)
+    public async Task<IActionResult> Submit(SubmitAnswerDto dto)
     {
-        await _svc.SubmitAnswerAsync(attemptId, dto);
+        await _svc.SubmitAnswerAsync(dto);
         return NoContent();
     }
 
     [HttpPost("{attemptId}/finish")]
-    public async Task<IActionResult> Finish(int attemptId)
+    public async Task<IActionResult> Finish(Guid attemptId)
     {
         await _svc.FinishAsync(attemptId);
         return NoContent();
     }
 
     [HttpGet("{attemptId}/result")]
-    public async Task<IActionResult> Result(int attemptId) =>
+    public async Task<IActionResult> Result(Guid attemptId) =>
         Ok(await _svc.GetResultAsync(attemptId));
 }

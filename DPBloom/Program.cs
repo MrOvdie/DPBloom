@@ -34,7 +34,7 @@ builder.Services.AddScoped<IdentityUser, ApplicationUser>();
 builder.Services.AddAutoMapper(config =>
     config.AddProfiles(new List<Profile>
     {
-        new LectureDaoProfile(), new CourseDaoProfile(), new TopicDaoProfile(), 
+        new LectureDaoProfile(), new CourseDaoProfile(), new TopicDaoProfile(),
         new LectureDtoProfile(), new TopicDtoProfile(), new CourseDtoProfile()
     }));
 
@@ -42,6 +42,14 @@ builder.Services.AddScoped<IExamRepository, ExamRepository>();
 builder.Services.AddScoped<ICourseRepository, CourseRepository>();
 builder.Services.AddScoped<ILectureRepository, LectureRepository>();
 builder.Services.AddScoped<ITopicRepository, TopicRepository>();
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("RequireTeacherPrivileges", policy => policy.RequireRole("Admin", "Teacher"));
+
+    options.AddPolicy("CanManageSystemData", policy => policy.RequireClaim("Permission", "ManageSystemData"));
+});
+
 
 builder.Services.AddOpenApi();
 

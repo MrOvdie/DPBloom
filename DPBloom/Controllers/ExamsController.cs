@@ -1,9 +1,9 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using DPBloom.Application.Exam;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TestOfTesting.DTOs;
-using TestOfTesting.Services.Interfaces;
 
-namespace TestOfTesting.Controllers;
+namespace DPBloom.Controllers;
 
 [ApiController]
 [Route("api/exams")]
@@ -14,10 +14,10 @@ public class ExamsController : ControllerBase
     public ExamsController(IExamService svc) => _svc = svc;
 
     [HttpGet]
-    public async Task<IActionResult> GetAll() => Ok(await _svc.GetAllAsync());
+    public async Task<IActionResult> GetAll() => Ok(await _svc.Get());
 
     [HttpGet("{id}")]
-    public async Task<IActionResult> Get(int id) =>
+    public async Task<IActionResult> Get(Guid id) =>
         await _svc.GetByIdAsync(id) is { } dto ? Ok(dto) : NotFound();
 
     [HttpPost]

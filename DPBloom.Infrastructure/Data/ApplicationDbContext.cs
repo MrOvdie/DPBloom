@@ -4,12 +4,13 @@ using DPBloom.Infrastructure.Exam;
 using DPBloom.Infrastructure.Lecture;
 using DPBloom.Infrastructure.Topic;
 using DPBloom.Infrastructure.User;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace DPBloom.Infrastructure.Data;
 
-public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
+public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>
 {
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { } 
     
