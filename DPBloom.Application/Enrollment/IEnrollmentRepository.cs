@@ -1,7 +1,7 @@
 ﻿using DPBloom.Application.Base;
 using DPBloom.Core.User;
 
-namespace DPBloom.Application.User;
+namespace DPBloom.Application.Enrollment;
 
 public interface IEnrollmentRepository : IRepository<UserEnrollmentModel>
 {

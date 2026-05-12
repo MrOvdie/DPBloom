@@ -9,5 +9,5 @@ public interface IUserRepository
     Task<IReadOnlyList<Claim>> GetUserClaimsAsync(Guid userId);
     Task<bool> CreateUserAsync(UserModel user, string password, string initialRole);
     Task<bool> UpdateUserAsync(UserModel user);
-    Task<UserModel?> GetByIdAsync(Guid userId);
+    Task<UserModel?> GetUserByIdAsync(Guid userId);
 }

@@ -7,6 +7,7 @@ using DPBloom.Application.Auth;
 using DPBloom.Application.Bloom;
 using DPBloom.Application.Course;
 using DPBloom.Application.Course.Validators;
+using DPBloom.Application.Enrollment;
 using DPBloom.Application.Exam;
 using DPBloom.Application.Lecture;
 using DPBloom.Application.Topic;
@@ -29,10 +30,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Scalar.AspNetCore;
+using IEnrollmentRepository = DPBloom.Application.User.IEnrollmentRepository;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+
+builder.Services.AddMediatR(cfg => { cfg.RegisterServicesFromAssembly(typeof(CourseService).Assembly); });
 
 // 1. Налаштування бази даних
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -41,12 +45,12 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // 2. Налаштування Identity (Без стандартних API ендпоінтів)
 builder.Services.AddIdentityCore<ApplicationUser>(options =>
     {
-        options.Password.RequiredLength = 6; 
+        options.Password.RequiredLength = 6;
         options.Password.RequireDigit = false;
-        options.Password.RequireLowercase = false; 
-        options.Password.RequireUppercase = false; 
-        options.Password.RequireNonAlphanumeric = false; 
-    
+        options.Password.RequireLowercase = false;
+        options.Password.RequireUppercase = false;
+        options.Password.RequireNonAlphanumeric = false;
+
         options.User.RequireUniqueEmail = true;
     })
     .AddRoles<IdentityRole<Guid>>()
@@ -58,11 +62,13 @@ builder.Services.AddAutoMapper(config =>
     config.AddExpressionMapping();
     config.AddProfiles(new List<Profile>
     {
-        new LectureDaoProfile(), new CourseDaoProfile(), new TopicDaoProfile(), new ExamDaoProfile(), new UserProfile(), new EnrollmentDaoProfile(),
-        new LectureDtoProfile(), new TopicDtoProfile(), new CourseDtoProfile(), new ExamDtoProfile(), new UserDtoProfile()
+        new LectureDaoProfile(), new CourseDaoProfile(), new TopicDaoProfile(), new ExamDaoProfile(), new UserProfile(),
+        new EnrollmentDaoProfile(),
+        new LectureDtoProfile(), new TopicDtoProfile(), new CourseDtoProfile(), new ExamDtoProfile(),
+        new UserDtoProfile()
     });
 });
-    
+
 builder.Services.AddHttpContextAccessor();
 
 // Цей рядок автоматично знайде всі класи-валідатори у тій же збірці, де знаходиться CreateCourseValidator
@@ -113,7 +119,7 @@ builder.Services.AddAuthentication(options =>
             ValidIssuer = builder.Configuration["Jwt:ValidIssuer"],
             ValidAudience = builder.Configuration["Jwt:ValidAudience"],
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
-            RoleClaimType = ClaimTypes.Role, 
+            RoleClaimType = ClaimTypes.Role,
             NameClaimType = ClaimTypes.Name
         };
     });
@@ -137,7 +143,7 @@ builder.Services.AddOpenApi(options =>
             BearerFormat = "JWT",
             Description = "Enter JWT token, given after logging in."
         });
-        
+
         document.SecurityRequirements.Add(new OpenApiSecurityRequirement
         {
             {

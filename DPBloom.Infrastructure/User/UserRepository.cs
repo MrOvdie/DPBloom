@@ -8,8 +8,8 @@ namespace DPBloom.Infrastructure.User;
 
 public class UserRepository : IUserRepository
 {
-    private readonly UserManager<ApplicationUser> _userManager;
     private readonly IMapper _mapper;
+    private readonly UserManager<ApplicationUser> _userManager;
 
     public UserRepository(UserManager<ApplicationUser> userManager, IMapper mapper)
     {
@@ -19,23 +19,23 @@ public class UserRepository : IUserRepository
 
     public async Task<UserModel?> ValidateUserAsync(string loginDetails, string password)
     {
-        var appUser = await _userManager.FindByEmailAsync(loginDetails) 
+        var appUser = await _userManager.FindByEmailAsync(loginDetails)
                       ?? await _userManager.FindByNameAsync(loginDetails);
-        
+
         if (appUser is null || !await _userManager.CheckPasswordAsync(appUser, password))
         {
             return null;
         }
-        
+
         var userClaims = await _userManager.GetClaimsAsync(appUser);
-        
+
         var roles = userClaims
             .Where(c => c.Type is ClaimTypes.Role or "role")
             .Select(c => c.Value)
             .ToList();
-        
+
         var userModel = _mapper.Map<UserModel>(appUser);
-    
+
         userModel.RoleClaims = roles;
 
         return userModel;
@@ -44,7 +44,7 @@ public class UserRepository : IUserRepository
     public async Task<IReadOnlyList<Claim>> GetUserClaimsAsync(Guid userId)
     {
         var appUser = await _userManager.FindByIdAsync(userId.ToString());
-        
+
         if (appUser is null)
         {
             return new List<Claim>();
@@ -59,16 +59,16 @@ public class UserRepository : IUserRepository
     public async Task<bool> CreateUserAsync(UserModel user, string password, string initialRole)
     {
         var appUser = _mapper.Map<ApplicationUser>(user);
-        
+
         var result = await _userManager.CreateAsync(appUser, password); //TODO: check saving process
-        
+
         if (result.Succeeded)
         {
-            await _userManager.AddClaimAsync(appUser, new Claim(ClaimTypes.Role, initialRole)); //TODO: maybe add some more claims
+            await _userManager.AddClaimAsync(appUser,
+                new Claim(ClaimTypes.Role, initialRole)); //TODO: maybe add some more claims
         }
 
         return result.Succeeded;
-    
     }
 
     public async Task<bool> UpdateUserAsync(UserModel userModel)
@@ -77,24 +77,24 @@ public class UserRepository : IUserRepository
         if (appUser is null) return false;
 
         var isFirstLogin = false;
-    
-        if (appUser.FirstLogin == default) 
+
+        if (appUser.FirstLogin == default)
         {
             appUser.FirstLogin = DateTime.UtcNow;
             isFirstLogin = true; //TODO: after maybe add event on this
         }
 
         appUser.LastLogin = DateTime.UtcNow;
-    
+
         await _userManager.UpdateAsync(appUser);
-    
+
         return true;
     }
 
-    public async Task<UserModel?> GetByIdAsync(Guid userId)
+    public async Task<UserModel?> GetUserByIdAsync(Guid userId)
     {
         var appUser = await _userManager.FindByIdAsync(userId.ToString());
-        
+
         return _mapper.Map<UserModel>(appUser);
     }
 }

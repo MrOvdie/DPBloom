@@ -19,7 +19,7 @@ public class EnrollmentRepository : RepositoryBase<UserEnrollmentModel, UserEnro
         var enrollment = await DbContext.UserEnrollments
             .Where(e => e.UserId.Equals(userId))
             .ToListAsync();
-        
+
         return Mapper.Map<List<UserEnrollmentModel>>(enrollment);
     }
 
@@ -28,7 +28,7 @@ public class EnrollmentRepository : RepositoryBase<UserEnrollmentModel, UserEnro
         var enrollment = await DbContext.UserEnrollments
             .Where(e => e.CourseId.Equals(courseId))
             .ToListAsync();
-        
+
         return Mapper.Map<List<UserEnrollmentModel>>(enrollment);
     }
 
@@ -36,7 +36,13 @@ public class EnrollmentRepository : RepositoryBase<UserEnrollmentModel, UserEnro
     {
         var enrollment = await DbContext.UserEnrollments
             .FirstOrDefaultAsync(e => e.CourseId.Equals(courseId) && e.UserId.Equals(userId));
-        
+
         return Mapper.Map<UserEnrollmentModel>(enrollment);
+    }
+
+    public async Task<bool> ExistsAsync(Guid userId, Guid courseId)
+    {
+        return await DbContext.UserEnrollments
+            .AnyAsync(e => e.CourseId == courseId && e.UserId == userId);
     }
 }

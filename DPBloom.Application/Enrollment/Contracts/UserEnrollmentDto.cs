@@ -1,4 +1,4 @@
-﻿namespace DPBloom.Application.User.Contracts;
+﻿namespace DPBloom.Application.Enrollment.Contracts;
 
 public class UserEnrollmentDto
 {

@@ -98,7 +98,7 @@ public class AuthService : IAuthService
 
     public async Task<UserProfileDto?> GetUserProfileAsync(Guid userId)
     {
-        var userModel = await _userRepository.GetByIdAsync(userId);
+        var userModel = await _userRepository.GetUserByIdAsync(userId);
 
         if (userModel is null) return null;
 

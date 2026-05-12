@@ -13,6 +13,7 @@ public class ExamModel : EntityBase<Guid>
     public DateTime StartsAt { get; set; }
     public DateTime FinishesAt { get; set; }
     public double? MinimalPassScore { get; set; }
+    public double MaximumScore { get; set; }
     public bool CanSkip { get; set; }
     public bool ShowResults { get; set; }
     public bool IsRandomOrder { get; set; }

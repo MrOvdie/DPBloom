@@ -17,14 +17,15 @@ public class ExamDao : EntityDaoBase<Guid>, ISoftDelete
     public DateTime StartsAt { get; set; }
     public DateTime FinishesAt { get; set; }
     public double? MinimalPassScore { get; set; }
+    public double MaximumScore { get; set; }
     public bool CanSkip { get; set; }
     public bool ShowResults { get; set; }
     public bool IsRandomOrder { get; set; }
-    public bool IsDeleted { get; set; }
-    public DateTime? DeletedOn { get; set; }
 
     public ICollection<QuestionDao> Questions { get; set; }
     public ApplicationUser Author { get; set; }
     public CourseDao Course { get; set; }
     public TopicDao Topic { get; set; }
+    public bool IsDeleted { get; set; }
+    public DateTime? DeletedOn { get; set; }
 }

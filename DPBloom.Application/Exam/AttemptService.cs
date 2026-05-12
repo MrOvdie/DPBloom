@@ -191,6 +191,7 @@ public class AttemptService : IAttemptService
         {
             AttemptId = attempt.Id,
             ExamId = exam.Exam.Id,
+            CourseId = exam.Exam.CourseId,
             TotalQuestions = exam.Questions.Count,
             Details = []
         };

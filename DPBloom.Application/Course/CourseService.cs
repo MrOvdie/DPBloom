@@ -1,26 +1,36 @@
 ﻿using AutoMapper;
 using DPBloom.Application.Auth;
 using DPBloom.Application.Course.Contracts;
+using DPBloom.Application.Course.Events;
+using DPBloom.Application.Enrollment.Contracts;
+using DPBloom.Application.Exam;
 using DPBloom.Application.Topic;
 using DPBloom.Application.User;
 using DPBloom.Core.Course;
 using DPBloom.Core.User;
 using FluentValidation;
-using UUIDNext;
+using MediatR;
 
 namespace DPBloom.Application.Course;
 
 public class CourseService : ICourseService
 {
+    private readonly IAttemptResultRepository _attemptResultRepository;
     private readonly ICourseRepository _courseRepository;
-    private readonly IEnrollmentRepository _enrollmentRepository;
-    private readonly IMapper _mapper;
     private readonly IValidator<CreateCourse> _createCourseValidator;
-    private readonly IValidator<UpdateCourse> _updateCourseValidator;
     private readonly ICurrentUserService _currentUserService;
+    private readonly IEnrollmentRepository _enrollmentRepository;
+    private readonly IExamRepository _examRepository;
+    private readonly IMapper _mapper;
+    private readonly IPublisher _publisher;
+    private readonly IValidator<UpdateCourse> _updateCourseValidator;
+    private readonly IUserRepository _userRepository;
 
     public CourseService(ICourseRepository courseRepository, IMapper mapper,
-        IValidator<CreateCourse> createCourseValidator, IValidator<UpdateCourse> updateCourseValidator, ICurrentUserService currentUserService, ITopicRepository topicRepository, IEnrollmentRepository enrollmentRepository)
+        IValidator<CreateCourse> createCourseValidator, IValidator<UpdateCourse> updateCourseValidator,
+        ICurrentUserService currentUserService, ITopicRepository topicRepository,
+        IEnrollmentRepository enrollmentRepository, IPublisher publisher, IUserRepository userRepository,
+        IAttemptResultRepository attemptResultRepository, IExamRepository examRepository)
     {
         _courseRepository = courseRepository;
         _mapper = mapper;
@@ -28,6 +38,10 @@ public class CourseService : ICourseService
         _updateCourseValidator = updateCourseValidator;
         _currentUserService = currentUserService;
         _enrollmentRepository = enrollmentRepository;
+        _publisher = publisher;
+        _userRepository = userRepository;
+        _attemptResultRepository = attemptResultRepository;
+        _examRepository = examRepository;
     }
 
     public async Task<IEnumerable<CourseDto>> GetAllAsync()
@@ -67,7 +81,8 @@ public class CourseService : ICourseService
     }
 
     public async Task<CourseDto> CreateCurseAsync(CreateCourse createCourse)
-    { //TODO: Figure out how to automatically add AuthorId to the course creation model
+    {
+        //TODO: Figure out how to automatically add AuthorId to the course creation model
         var validationResult = await _createCourseValidator.ValidateAsync(createCourse);
 
         if (!validationResult.IsValid)
@@ -88,35 +103,92 @@ public class CourseService : ICourseService
     public async Task<CourseDto> UpdateCourseAsync(Guid courseId, UpdateCourse updateCourse)
     {
         var validationResult = await _updateCourseValidator.ValidateAsync(updateCourse);
-        
+
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
-        
+
         var existingCourse = await GetEntityByIdAsync(courseId);
-        
+
         var updatedExistedCourseModel = _mapper.Map(updateCourse, existingCourse);
-        
+
         updatedExistedCourseModel.UpdatedOn = DateTime.UtcNow;
-        
+
         var updatedCourse = await _courseRepository.UpdateAsync(updatedExistedCourseModel);
-        
+
         return _mapper.Map<CourseDto>(updatedCourse);
     }
 
     public async Task<CourseDto> DeleteAsync(Guid courseId)
     {
         var course = await GetEntityByIdAsync(courseId);
-        
+
         await _courseRepository.DeleteAsync(courseId);
-        
+
         return _mapper.Map<CourseDto>(course);
     }
 
     public async Task<CourseDto> RestoreAsync(Guid courseId)
     {
         var restoreCourse = await _courseRepository.RestoreAsync(courseId);
-        
+
         return _mapper.Map<CourseDto>(restoreCourse);
+    }
+
+    public async Task<CourseAggregateDto?> GetCourseContentAsync(Guid courseId, bool bypassAccessCheck = false)
+    {
+        var course = await _courseRepository.GetByIdAsync(courseId);
+
+        if (course is null)
+            throw new KeyNotFoundException("Course not found.");
+
+        var userId = _currentUserService.GetUserId();
+
+        if (!bypassAccessCheck)
+        {
+            var enrollment = await _enrollmentRepository.ExistsAsync(userId, courseId);
+
+            if (!enrollment)
+                throw new UnauthorizedAccessException("You are not enrolled in this course.");
+        }
+
+        var courseAggregate = await _courseRepository.GetCourseWithContentAsync(courseId);
+
+        return courseAggregate;
+    }
+
+    public async Task EnrollUserAsync(Guid courseId, Guid userId)
+    {
+        _ = await GetEntityByIdAsync(courseId);
+
+        var user = await _userRepository.GetUserByIdAsync(userId);
+
+        if (user is null)
+            throw new KeyNotFoundException("User not found.");
+
+        var enrollment = new CreateEnrollment()
+        {
+            CourseId = courseId,
+            UserId = userId,
+            Status = EnrollmentStatusEnum.Active
+        };
+
+        await _publisher.Publish(new UserEnrolledEvent(enrollment));
+    }
+
+    public async Task DismissUserAsync(Guid enrollmentId)
+    {
+        var existingEnrollment = await _enrollmentRepository.GetByIdAsync(enrollmentId);
+
+        if (existingEnrollment is null)
+            throw new KeyNotFoundException("Enrollment not found.");
+
+        var updatedEnrolment = new UpdateEnrollment()
+        {
+            Status = EnrollmentStatusEnum.Active,
+            FinalGrade = await GetUserCourseScoreAsync(existingEnrollment.CourseId, existingEnrollment.UserId)
+        };
+
+        await _publisher.Publish(new UserDismissedEvent(enrollmentId, updatedEnrolment));
     }
 
     private async Task<CourseModel> GetEntityByIdAsync(Guid id)
@@ -129,60 +201,46 @@ public class CourseService : ICourseService
         return lecture;
     }
 
-    public async Task<CourseAggregateDto?> GetCourseContentAsync(Guid courseId, bool bypassAccessCheck = false)
+    public async Task<double> GetCourseExamsProgressAsync(Guid courseId, Guid userId)
     {
-        var course = await _courseRepository.GetByIdAsync(courseId);
-        
-        if (course is null)
-            throw new KeyNotFoundException("Course not found.");
+        var courseExams = await _examRepository.GetByCourseAsync(courseId);
 
-        var userId = _currentUserService.GetUserId();
-        
-        if (!bypassAccessCheck)
-        {
-            var enrollment = await _enrollmentRepository.GetByUserAndCourseAsync(userId, courseId);
+        var totalCourseExamsCount = courseExams.Count;
 
-            if (enrollment is null)
-            {
-                throw new UnauthorizedAccessException("You are not enrolled in this course.");
-            }
-        }
-        
-        var courseAggregate = await _courseRepository.GetCourseWithContentAsync(courseId);
+        var userAttempts = await _attemptResultRepository
+            .GetAsync(a => a.UserId.Equals(userId) && a.CourseId.Equals(courseId));
 
-        return courseAggregate;
-    }
-    
-    public async Task EnrollUserAsync(Guid courseId, Guid userId)
-    {
-        _ = await GetEntityByIdAsync(courseId);
+        var uniqueExamsPassed = userAttempts.GroupBy(ba => ba.ExamId)
+            .Select(group => group.OrderByDescending(ba => ba.Score).First().Passed).Count();
 
-        var existingEnrollment = await _enrollmentRepository.GetByUserAndCourseAsync(userId, courseId);
-
-        if (existingEnrollment is not null)
-        {
-            throw new InvalidOperationException("User is already enrolled in this course.");
-        }
-
-        var createdEnrollment = new UserEnrollmentModel
-        {
-            Id = Uuid.NewDatabaseFriendly(Database.SqlServer),
-            UserId = userId,
-            CourseId = courseId,
-            CreatedOn = DateTime.UtcNow,
-            UpdatedOn = DateTime.UtcNow
-        };
-
-        await _enrollmentRepository.AddAsync(createdEnrollment);
+        return (double)uniqueExamsPassed / totalCourseExamsCount * 100;
     }
 
-    public async Task DismissUserAsync(Guid enrollmentId)
+    public async Task<double> GetCourseScoreProgressAsync(Guid courseId, Guid userId)
     {
-        var enrollment = await _enrollmentRepository.GetByIdAsync(enrollmentId);
-        
-        if (enrollment is null)
-            throw new KeyNotFoundException("Enrollment not found.");
-        
-        //await _enrollmentRepository.(enrollmentId);
+        var userScore = await GetUserCourseScoreAsync(courseId, userId);
+
+        var courseExams = await _examRepository.GetByCourseAsync(courseId);
+
+        var maxScore = courseExams.Select(ce => ce.MaximumScore).Sum();
+
+        return userScore / maxScore * 100;
+    }
+
+    public async Task<double> GetUserCourseScoreAsync(Guid courseId, Guid userId)
+    {
+        var userAttempts = await _attemptResultRepository
+            .GetAsync(a => a.UserId.Equals(userId) && a.CourseId.Equals(courseId));
+
+        if (userAttempts is null)
+            return 0;
+
+        var uniqueBestAttmepts = userAttempts.GroupBy(ba => ba.ExamId)
+            .Select(group => group.OrderByDescending(ba => ba.Score).First())
+            .ToList();
+
+        var userScore = uniqueBestAttmepts.Sum(a => a.Score);
+
+        return userScore;
     }
 }
