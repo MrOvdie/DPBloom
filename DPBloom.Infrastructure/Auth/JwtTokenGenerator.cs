@@ -3,37 +3,29 @@ using System.Security.Claims;
 using System.Text;
 using DPBloom.Application.Auth;
 using DPBloom.Core.User;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
 namespace DPBloom.Infrastructure.Auth;
 
 public class JwtTokenGenerator : IJwtTokenGenerator
 {
-    private readonly IConfiguration _configuration;
+    private readonly JwtSettings _jwtSettings;
 
-    public JwtTokenGenerator(IConfiguration configuration)
+    public JwtTokenGenerator(IOptions<JwtSettings> jwtOptions)
     {
-        _configuration = configuration;
+        _jwtSettings = jwtOptions.Value;
     }
     
     public string GenerateToken(UserModel user, IReadOnlyList<Claim> claims)
     {
-        var authClaims = new List<Claim>(claims)
-        {
-            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new Claim(ClaimTypes.Name, user.Email),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-        };
-
-        var secret = _configuration["Jwt:Secret"] ?? throw new InvalidOperationException("JWT Secret is missing");
-        var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
+        var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Secret));
 
         var token = new JwtSecurityToken(
-            issuer: _configuration["Jwt:ValidIssuer"],
-            audience: _configuration["Jwt:ValidAudience"],
-            expires: DateTime.UtcNow.AddHours(3),
-            claims: authClaims,
+            issuer: _jwtSettings.ValidIssuer,
+            audience: _jwtSettings.ValidAudience,
+            expires: DateTime.UtcNow.AddMinutes(_jwtSettings.ExpiryMinutes),
+            claims: claims,
             signingCredentials: new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256)
         );
 

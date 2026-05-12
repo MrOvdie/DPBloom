@@ -1,4 +1,5 @@
 ﻿using System.Security.Claims;
+using AutoMapper;
 using DPBloom.Application.Auth;
 using DPBloom.Core.User;
 using Microsoft.AspNetCore.Identity;
@@ -8,30 +9,36 @@ namespace DPBloom.Infrastructure.User;
 public class UserRepository : IUserRepository
 {
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IMapper _mapper;
 
-    public UserRepository(UserManager<ApplicationUser> userManager)
+    public UserRepository(UserManager<ApplicationUser> userManager, IMapper mapper)
     {
         _userManager = userManager;
+        _mapper = mapper;
     }
 
-    public async Task<UserModel?> ValidateUserAsync(string email, string password)
+    public async Task<UserModel?> ValidateUserAsync(string loginDetails, string password)
     {
-        var appUser = await _userManager.FindByEmailAsync(email);
+        var appUser = await _userManager.FindByEmailAsync(loginDetails) 
+                      ?? await _userManager.FindByNameAsync(loginDetails);
         
-        // 2. Якщо користувача немає або пароль невірний - повертаємо null
         if (appUser is null || !await _userManager.CheckPasswordAsync(appUser, password))
         {
             return null;
         }
+        
+        var userClaims = await _userManager.GetClaimsAsync(appUser);
+        
+        var roles = userClaims
+            .Where(c => c.Type is ClaimTypes.Role or "role")
+            .Select(c => c.Value)
+            .ToList();
+        
+        var userModel = _mapper.Map<UserModel>(appUser);
+    
+        userModel.RoleClaims = roles;
 
-        // 3. Мапимо (перекладаємо) базу даних у чисту бізнес-модель
-        return new UserModel
-        {
-            Id = appUser.Id,
-            Email = appUser.Email ?? string.Empty,
-            FirstName = appUser.FirstName,
-            LastName = appUser.LastName
-        };
+        return userModel;
     }
 
     public async Task<IReadOnlyList<Claim>> GetUserClaimsAsync(Guid userId)
@@ -51,17 +58,10 @@ public class UserRepository : IUserRepository
 
     public async Task<bool> CreateUserAsync(UserModel user, string password, string initialRole)
     {
-        var appUser = new ApplicationUser
-        {
-            Id = user.Id,
-            UserName = user.Email,
-            Email = user.Email,
-            FirstName = user.FirstName,
-            LastName = user.LastName
-        };
+        var appUser = _mapper.Map<ApplicationUser>(user);
         
         var result = await _userManager.CreateAsync(appUser, password); //TODO: check saving process
-
+        
         if (result.Succeeded)
         {
             await _userManager.AddClaimAsync(appUser, new Claim(ClaimTypes.Role, initialRole)); //TODO: maybe add some more claims
@@ -71,18 +71,30 @@ public class UserRepository : IUserRepository
     
     }
 
+    public async Task<bool> UpdateUserAsync(UserModel userModel)
+    {
+        var appUser = await _userManager.FindByIdAsync(userModel.Id.ToString());
+        if (appUser is null) return false;
+
+        var isFirstLogin = false;
+    
+        if (appUser.FirstLogin == default) 
+        {
+            appUser.FirstLogin = DateTime.UtcNow;
+            isFirstLogin = true; //TODO: after maybe add event on this
+        }
+
+        appUser.LastLogin = DateTime.UtcNow;
+    
+        await _userManager.UpdateAsync(appUser);
+    
+        return true;
+    }
+
     public async Task<UserModel?> GetByIdAsync(Guid userId)
     {
         var appUser = await _userManager.FindByIdAsync(userId.ToString());
-    
-        if (appUser is null) return null;
-
-        return new UserModel //TODO: check if this layer is allowed to map to domain model
-        {
-            Id = appUser.Id,
-            Email = appUser.Email ?? string.Empty,
-            FirstName = appUser.FirstName,
-            LastName = appUser.LastName
-        };
+        
+        return _mapper.Map<UserModel>(appUser);
     }
 }

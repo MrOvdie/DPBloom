@@ -1,5 +1,8 @@
 ﻿using DPBloom.Infrastructure.Base;
+using DPBloom.Infrastructure.Course;
 using DPBloom.Infrastructure.Extensions;
+using DPBloom.Infrastructure.Topic;
+using DPBloom.Infrastructure.User;
 
 namespace DPBloom.Infrastructure.Exam;
 
@@ -21,4 +24,7 @@ public class ExamDao : EntityDaoBase<Guid>, ISoftDelete
     public DateTime? DeletedOn { get; set; }
 
     public ICollection<QuestionDao> Questions { get; set; }
+    public ApplicationUser Author { get; set; }
+    public CourseDao Course { get; set; }
+    public TopicDao Topic { get; set; }
 }

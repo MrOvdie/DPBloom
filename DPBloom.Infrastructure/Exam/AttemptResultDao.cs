@@ -1,5 +1,6 @@
 ﻿using DPBloom.Infrastructure.Base;
 using DPBloom.Infrastructure.Data;
+using DPBloom.Infrastructure.User;
 
 namespace DPBloom.Infrastructure.Exam;
 
@@ -14,10 +15,11 @@ public class AttemptResultDao : EntityDaoBase<Guid>
 
     public double Score { get; set; }
     public double ScorePercentage { get; set; }
-    
+
     public bool Passed { get; set; }
 
     public List<QuestionResultDao> Details { get; set; }
     public UserExamAttemptDao Attempt { get; set; }
     public ExamDao Exam { get; set; }
+    public ApplicationUser User { get; set; }
 }

@@ -1,4 +1,5 @@
 ﻿using System.Linq.Expressions;
+using System.Linq.Dynamic.Core;
 using AutoMapper;
 using DPBloom.Application.Base;
 using DPBloom.Core.Base;
@@ -23,45 +24,79 @@ public class RepositoryBase<TModel, TDao, TContext> : IRepository<TModel>
 
     public async Task<IReadOnlyList<TModel>> GetAllAsync()
     {
-        var entities = await DbContext.Set<TModel>().ToListAsync();
+        var entitiesDao = await DbContext.Set<TDao>().ToListAsync();
+        
+        var entities = Mapper.Map<List<TModel>>(entitiesDao);
+        
         return entities;
     }
     
     public async Task<IReadOnlyList<TModel>> GetAsync(Expression<Func<TModel, bool>> predicate)
     {
-        var entities = await DbContext.Set<TModel>().Where(predicate).ToListAsync();
+        var mappedPredicate = Mapper.Map<Expression<Func<TDao, bool>>>(predicate);
+        
+        var entitiesDao = await DbContext.Set<TDao>().Where(mappedPredicate).ToListAsync();
+        
+        var entities = Mapper.Map<List<TModel>>(entitiesDao);
+        
         return entities;
     }
 
     public async Task<IReadOnlyList<TModel>> GetAsync(Expression<Func<TModel, bool>>? predicate = null,
-        Func<IQueryable<TModel>, IOrderedQueryable<TModel>> orderBy = null,
-        string includeString = null,
+        string? orderBy = null,
+        string? includeString = null,
         bool disableTracking = true)
     {
-        IQueryable<TModel> query = DbContext.Set<TModel>();
+        IQueryable<TDao> query = DbContext.Set<TDao>();
 
         if (disableTracking) query = query.AsNoTracking();
+        
         if (!string.IsNullOrWhiteSpace(includeString)) query = query.Include(includeString);
-        if (predicate is not null) query = query.Where(predicate);
-        if (orderBy is not null) query = orderBy(query);
+        
+        if (predicate is not null)
+        {
+            var mappedPredicate = Mapper.Map<Expression<Func<TDao, bool>>>(predicate);
+            query = query.Where(mappedPredicate);
+        }
+        
+        if (!string.IsNullOrWhiteSpace(orderBy))
+        {
+            query = query.OrderBy(orderBy); 
+        }
 
-        var entities = await query.ToListAsync();
+        var entitiesDao = await query.ToListAsync();
+        
+        var entities = Mapper.Map<List<TModel>>(entitiesDao);
+        
         return entities;
     }
 
     public async Task<IReadOnlyList<TModel>> GetAsync(Expression<Func<TModel, bool>>? predicate = null,
-        Func<IQueryable<TModel>, IOrderedQueryable<TModel>> orderBy = null,
+        string? orderBy = null,
         List<Expression<Func<TModel, object>>>? includes = null,
         bool disableTracking = true)
     {
         IQueryable<TModel> query = DbContext.Set<TModel>();
 
         if (disableTracking) query = query.AsNoTracking();
+        
         if (includes is not null) query = includes.Aggregate(query, (current, include) => current.Include(include));
-        if (predicate is not null) query = query.Where(predicate);
-        if (orderBy is not null) query = orderBy(query);
+       
+        if (predicate is not null)
+        {
+            var mappedPredicate = Mapper.Map<Expression<Func<TDao, bool>>>(predicate);
+            query = query.Where(mappedPredicate);
+        }
+        
+        if (!string.IsNullOrWhiteSpace(orderBy))
+        {
+            query = query.OrderBy(orderBy); 
+        }
 
-        var entities = await query.ToListAsync();
+        var entitiesDao = await query.ToListAsync();
+        
+        var entities = Mapper.Map<List<TModel>>(entitiesDao);
+        
         return entities;
     }
 
@@ -74,65 +109,94 @@ public class RepositoryBase<TModel, TDao, TContext> : IRepository<TModel>
 
     public async Task<TModel> GetByIdAsync(Guid id)
     {
-        var entity = await DbContext.Set<TModel>().AsNoTracking()
+        var entityDao = await DbContext.Set<TDao>().AsNoTracking()
             .FirstOrDefaultAsync(e => e.Id.Equals(id));
+        
+        var entity = Mapper.Map<TModel>(entityDao);
+        
         return entity;
     }
 
     public async Task<TModel> AddAsync(TModel entity)
     {
-        var entityDao = Mapper.Map<TModel>(entity);
+        var entityDao = Mapper.Map<TDao>(entity);
 
-        await DbContext.Set<TModel>().AddAsync(entityDao);
+        await DbContext.Set<TDao>().AddAsync(entityDao);
 
         await DbContext.SaveChangesAsync();
-        return entityDao;
+        
+        var enitityModel = Mapper.Map<TModel>(entityDao);
+        
+        return enitityModel;
     }
 
     public async Task<TModel> UpdateAsync(TModel entity)
     {
         //TODO: check, if it working correctly
-        var entityDao = Mapper.Map<TModel>(entity);
+        var existingDao = await DbContext.Set<TDao>().FindAsync(entity.Id); 
         
-        DbContext.Update(entityDao);
-        
+        if (existingDao is null)
+        {
+            return null; 
+        }
+
+        Mapper.Map(entity, existingDao);
+    
         await DbContext.SaveChangesAsync();
-        
-        return Mapper.Map<TModel>(entityDao);
-        /*var entityDao = Mapper.Map<TEntity>(entity);
-
-        DbContext.Entry(entityDao).State = EntityState.Modified;
-
-        await DbContext.SaveChangesAsync();
-
-        return Mapper.Map<TEntityReturn>(entityDao);*/
+    
+        return Mapper.Map<TModel>(existingDao);
     }
 
-    public async Task DeleteAsync(TModel entity)
+    public async Task DeleteAsync(Guid id)
     {
         /*DbContext.Set<TEntity>().Remove(entity);
         await DbContext.SaveChangesAsync();*/
-        var entityDao = Mapper.Map<TDao>(entity);
+        var existingDao = await DbContext.Set<TDao>().FindAsync(id);
 
-        entityDao.Delete();
+        if (existingDao is null)
+        {
+            return;
+        }
+
+        if (existingDao is ISoftDelete softDeleteEntity)
+        {
+            softDeleteEntity.Delete(); //TODO: Check this
+            
+            DbContext.Entry(existingDao).State = EntityState.Modified;
+        }
+        else
+        {
+            DbContext.Set<TDao>().Remove(existingDao);
+        }
         
         await DbContext.SaveChangesAsync();
     }
 
-    public async Task RestoreAsync(TModel entity)
+    public async Task<TModel> RestoreAsync(Guid id)
     {
-        //TODO: maybe add some checking, if entity was updated (like in UpdateAsync)
-        var entityDao = Mapper.Map<TDao>(entity);
-
-        entityDao.Undo();
-
-        //DbContext.Entry(entityDao).State = EntityState.Modified;
-        await DbContext.SaveChangesAsync();
+        var existingDao = await DbContext.Set<TDao>()
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(e => EF.Property<Guid>(e, "Id") == id);
+        
+        if (existingDao is null)
+        {
+            return null;
+        }
+        
+        if (existingDao is ISoftDelete softDeletable) 
+        {
+            softDeletable.Undo();
+            await DbContext.SaveChangesAsync();
+        }
+        
+        return Mapper.Map<TModel>(existingDao);
     }
 
     public async Task<bool> ExistsAsync(Expression<Func<TModel, bool>> predicate)
     {
-        return await DbContext.Set<TModel>().AnyAsync(predicate);
+        var mappedPredicate = Mapper.Map<Expression<Func<TDao, bool>>>(predicate);
+        
+        return await DbContext.Set<TDao>().AnyAsync(mappedPredicate);
     }
 
     /*public async Task<int> CountAsync(ISpecification<TEntity> spec)

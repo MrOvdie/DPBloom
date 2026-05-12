@@ -47,12 +47,12 @@ public class ExamDaoProfile : Profile
 
         CreateMap<QuestionModel, QuestionDao>()
             .ForMember(dest => dest.Type, opt => opt.MapFrom(src => (int)src.Type))
-            .ForMember(dest => dest.Category, opt => opt.MapFrom(src => (int)src.Category))
+            .ForMember(dest => dest.Level, opt => opt.MapFrom(src => (int)src.Level))
             .ForMember(dest => dest.CheckingType, opt => opt.MapFrom(src => (int)src.CheckingType));
 
         CreateMap<QuestionDao, QuestionModel>()
             .ForMember(dest => dest.Type, opt => opt.MapFrom(src => (Type)src.Type))
-            .ForMember(dest => dest.Category, opt => opt.MapFrom(src => (Category)src.Category))
+            .ForMember(dest => dest.Level, opt => opt.MapFrom(src => (Level)src.Level))
             .ForMember(dest => dest.CheckingType, opt => opt.MapFrom(src => (CheckingType)src.CheckingType));
 
         CreateMap<AnswerOptionModel, AnswerOptionDao>().ReverseMap();

@@ -1,6 +1,6 @@
 using DPBloom.Application.Base;
 
-namespace DPBloom.Application.Exam.Contracts;
+namespace DPBloom.Application.Exam.Contracts.Update;
 
 public class UpdateOptionDto : ModelBase<Guid>
 {

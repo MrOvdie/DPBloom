@@ -1,6 +1,8 @@
-﻿namespace DPBloom.Infrastructure.Bloom;
+﻿using DPBloom.Infrastructure.Base;
 
-public class RecommendedMaterialDao
+namespace DPBloom.Infrastructure.Bloom;
+
+public class RecommendedMaterialDao : EntityDaoBase<Guid>
 {
     public Guid MaterialId { get; set; }
     public string Title { get; set; }

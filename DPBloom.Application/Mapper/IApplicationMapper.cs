@@ -1,8 +1,7 @@
 ﻿using AutoMapper;
 
-namespace _mapper;
+namespace DPBloom.Application.Mapper;
 
 public interface IApplicationMapper : IMapper
 {
-    
 }

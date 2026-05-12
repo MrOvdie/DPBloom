@@ -10,16 +10,15 @@ public class UpdateCourseValidator : AbstractValidator<UpdateCourse>
         RuleFor(uc => uc).NotNull().WithMessage("Course object cannot be null.");
         
         RuleFor(uc => uc.Title)
+            .NotEmpty().When(x => x.Title != null)
             .MaximumLength(150).WithMessage("Title must be at most 150 characters long.")
             .MinimumLength(3).When(uc => !string.IsNullOrEmpty(uc.Title))
             .WithMessage("Title must be at least 3 characters long.");
         
-        //TODO: check, if it working properly
+        //TODO: check, if it is working properly
         RuleFor(uc => uc.Description)
+            .NotEmpty().When(x => x.Description != null)
             .Must(d => string.IsNullOrEmpty(d) || d.Length >= 3)
             .WithMessage("Description must be at least 3 characters long.");
-        
-        RuleFor(uc => uc.AuthorId)
-            .NotEmpty().WithMessage("AuthorId is required.");
     }
 }

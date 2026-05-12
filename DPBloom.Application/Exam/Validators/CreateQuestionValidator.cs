@@ -1,11 +1,11 @@
-﻿using FluentValidation;
-using TestOfTesting.DTOs;
+﻿using DPBloom.Application.Exam.Contracts.Create;
+using FluentValidation;
 
 namespace DPBloom.Application.Exam.Validators;
 
-public class QuestionValidator : AbstractValidator<CreateQuestionDto>
+public class CreateQuestionValidator : AbstractValidator<CreateQuestionDto>
 {
-    public QuestionValidator()
+    public CreateQuestionValidator()
     {
         RuleFor(q => q.Text)
             .NotEmpty().WithMessage("Question text is required.")
@@ -14,13 +14,13 @@ public class QuestionValidator : AbstractValidator<CreateQuestionDto>
         RuleFor(q => q.Type)
             .InclusiveBetween(0, 5).WithMessage("Invalid question type."); //TODO: make proper ranges
 
-        RuleFor(q => q.Category)
-            .InclusiveBetween(0, 6).WithMessage("Invalid category.");
+        RuleFor(q => q.Level)
+            .InclusiveBetween(0, 6).WithMessage("Invalid Bloom's taxonomy level.");
 
         RuleFor(q => q.CheckingType)
             .InclusiveBetween(0, 2).WithMessage("Invalid checking type.");
 
         RuleForEach(q => q.Options)
-            .SetValidator(new OptionValidator());
+            .SetValidator(new CreateOptionValidator());
     }
 }

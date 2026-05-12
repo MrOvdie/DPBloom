@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using DPBloom.Application.Auth;
 using DPBloom.Application.Lecture.Contracts;
 using DPBloom.Core.Lecture;
 using FluentValidation;
@@ -11,14 +12,17 @@ public class LectureService : ILectureService
     private readonly IMapper _mapper;
     private readonly IValidator<CreateLecture> _createValidator;
     private readonly IValidator<UpdateLecture> _updateValidator;
+    private readonly ICurrentUserService _currentUserService;
+    
 
     public LectureService(ILectureRepository lectureRepository, IMapper mapper,
-        IValidator<CreateLecture> createValidator, IValidator<UpdateLecture> updateValidator)
+        IValidator<CreateLecture> createValidator, IValidator<UpdateLecture> updateValidator, ICurrentUserService currentUserService)
     {
         _lectureRepository = lectureRepository;
         _mapper = mapper;
         _createValidator = createValidator;
         _updateValidator = updateValidator;
+        _currentUserService = currentUserService;
     }
 
     public async Task<IEnumerable<LectureDto>> GetAllAsync()
@@ -80,7 +84,7 @@ public class LectureService : ILectureService
         return _mapper.Map<IEnumerable<LectureDto>>(lectures);
     }
 
-    public async Task<LectureDto> CreateAsync(CreateLecture createLecture)
+    public async Task<LectureDto> CreateAsync(Guid courseId, CreateLecture createLecture)
     {
         var validationResult = await _createValidator.ValidateAsync(createLecture);
 
@@ -88,12 +92,12 @@ public class LectureService : ILectureService
             throw new ValidationException(validationResult.Errors);
 
         if (await _lectureRepository.ExistsAsync(l =>
-                l.Title == createLecture.Title && l.CourseId.Equals(createLecture.CourseId) /*&& !l.IsDeleted*/))
+                l.Title == createLecture.Title && l.CourseId.Equals(courseId)))
             throw new InvalidOperationException($"Lecture with name {createLecture.Title} already exists in this course");
 
         var createLectureModel = _mapper.Map<LectureModel>(createLecture);
-        createLectureModel.Id = Guid.NewGuid();
-        createLectureModel.CreatedOn = createLectureModel.UpdatedOn = DateTime.UtcNow;
+        createLectureModel.AuthorId = _currentUserService.GetUserId();
+        createLectureModel.CourseId = courseId;
 
         var createdLecture = await _lectureRepository.AddAsync(createLectureModel);
 
@@ -108,32 +112,34 @@ public class LectureService : ILectureService
             throw new ValidationException(validationResult.Errors);
 
         var existingLecture = await GetEntityByIdAsync(lectureId);
+        
+        updateLecture.CourseId ??= existingLecture.CourseId;
+        
+        updateLecture.TopicId ??= existingLecture.TopicId;
 
-        var updateLectureModel = _mapper.Map<LectureModel>(updateLecture);
-        updateLectureModel.Id = existingLecture.Id;
-        updateLectureModel.UpdatedOn = DateTime.UtcNow;
+        var updatedExistedLectureModel = _mapper.Map(updateLecture, existingLecture);
+        
+        updatedExistedLectureModel.UpdatedOn = DateTime.UtcNow;
 
-        var updatedLecture = await _lectureRepository.UpdateAsync(updateLectureModel);
+        var updatedLecture = await _lectureRepository.UpdateAsync(updatedExistedLectureModel);
 
         return _mapper.Map<LectureDto>(updatedLecture);
     }
 
-    public async Task<LectureDto> DeleteAsync(Guid id)
+    public async Task<LectureDto> DeleteAsync(Guid lectureId)
     {
-        var lecture = await GetEntityByIdAsync(id);
+        var lecture = await GetEntityByIdAsync(lectureId);
 
-        await _lectureRepository.DeleteAsync(lecture);
+        await _lectureRepository.DeleteAsync(lectureId);
         
         return _mapper.Map<LectureDto>(lecture);
     }
 
-    public async Task<LectureDto> RestoreAsync(Guid id)
+    public async Task<LectureDto> RestoreAsync(Guid lectureId)
     {
-        var lecture = await GetEntityByIdAsync(id);
-
-        await _lectureRepository.DeleteAsync(lecture);
+        var restoredLecture = await _lectureRepository.RestoreAsync(lectureId);
         
-        return _mapper.Map<LectureDto>(lecture);
+        return _mapper.Map<LectureDto>(restoredLecture);
     }
 
     public async Task<LectureModel> GetEntityByIdAsync(Guid id)

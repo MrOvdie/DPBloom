@@ -11,7 +11,7 @@ public interface IBloomService
     // 2. Агрегований аналіз курсу (для студента)
     Task<CourseBloomAnalysisDto> AnalyzeUserCourseAsync(Guid userId, Guid courseId);
 
-    // 3. Глобальний профіль (для студента/куратора)
+    // 3. Глобальний профіль (для студента)
     Task<UserBloomProfileDto> GetUserOverallProfileAsync(Guid userId);
 
     // 4. Аналіз екзамену (для викладача)

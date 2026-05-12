@@ -17,11 +17,5 @@ public class CreateTopicValidator : AbstractValidator<CreateTopic>
         RuleFor(ct => ct.Description)
             .Must(d => string.IsNullOrEmpty(d) || d.Length >= 3)
             .WithMessage("Description must be at least 3 characters long.");
-        
-        RuleFor(ct => ct.CourseId)
-            .NotEmpty().WithMessage("CourseId is required");
-
-        RuleFor(ct => ct.AuthorId)
-            .NotEmpty().WithMessage("AuthorId is required");
     }
 }

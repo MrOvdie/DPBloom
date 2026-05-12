@@ -1,6 +1,8 @@
-﻿namespace DPBloom.Infrastructure.Bloom;
+﻿using DPBloom.Infrastructure.Base;
 
-public class BloomLevelPerformanceDao
+namespace DPBloom.Infrastructure.Bloom;
+
+public class BloomLevelPerformanceDao : EntityDaoBase<Guid>
 {
     public int Level { get; set; }
     public double ScorePercentage { get; set; }

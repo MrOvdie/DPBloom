@@ -49,19 +49,45 @@ public class AttemptService : IAttemptService
         return startedModel.Id;
     }
 
-    public async Task SubmitAnswerAsync(/*Guid attemptId, */SubmitAnswerDto answer)
+    public async Task SubmitAnswerAsync(Guid userId, Guid attemptId, SubmitAnswerDto answer)
     {
         //TODO: add submit answer validator
 
         // var validation...
 
-        var answerModel = _mapper.Map<UserAnswerModel>(answer);
+        // 1. Отримуємо спробу з бази даних
+        // (У тебе в IAttemptRepository має бути метод для отримання спроби)
+        var attempt = await _attemptRepository.GetByIdAsync(attemptId);
 
+        // 2. Перевіряємо, чи існує така спроба взагалі
+        if (attempt == null)
+        {
+            throw new KeyNotFoundException("Спробу не знайдено.");
+        }
+
+        // 3. БІЗНЕС-ПЕРЕВІРКА ВЛАСНИКА (Authorization)
+        if (attempt.UserId != userId)
+        {
+            // Кидаємо виняток. Сервіс не знає про HTTP 403, він просто каже "Доступ заборонено"
+            throw new UnauthorizedAccessException("Ви не маєте доступу до цієї спроби.");
+        }
+
+        // 4. (Опціонально) Можна додати перевірку, чи спроба ще активна
+        // if (attempt.Status != AttemptStatus.InProgress)
+        //     throw new InvalidOperationException("Ця спроба вже завершена.");
+
+        // 5. Валідація DTO (FluentValidation)
+        // TODO: add submit answer validator
+
+        // 6. Мапінг і збереження
+        var answerModel = _mapper.Map<UserAnswerModel>(answer);
         answerModel.Id = Guid.NewGuid();
         answerModel.CreatedOn = answerModel.UpdatedOn = DateTime.UtcNow;
         answerModel.SubmittedAt = DateTime.UtcNow;
 
-        await _attemptRepository.SubmitAnswerAsync(answer.AttemptId, answerModel);
+        // Зверни увагу: використовуємо attemptId з параметрів методу (маршруту), 
+        // а не з тіла запиту (answer.AttemptId), щоб уникнути підміни даних хакером.
+        await _attemptRepository.SubmitAnswerAsync(attemptId, answerModel);
     }
 
     public async Task SaveAllAnswersAsync(Guid attemptId, List<SubmitAnswerDto> answers)
@@ -82,14 +108,22 @@ public class AttemptService : IAttemptService
         await _attemptRepository.SaveAllAnswersAsync(attemptId, answerModels);
     }
 
-    public async Task FinishAsync(Guid attemptId)
+    public async Task<AttemptResultDto> FinishAsync(Guid userId, Guid attemptId)
     {
         var attempt = await GetEntityByIdAsync(attemptId);
+
+        if (attempt is null)
+            throw new KeyNotFoundException("Спробу не знайдено.");
+
+        if (attempt.UserId != userId)
+            throw new UnauthorizedAccessException("Ви не маєте доступу до цієї спроби.");
+
         var exam = await _examRepository.GetWithQuestionsAsync(attempt.ExamId);
 
         if (attempt.Status is AttemptStatus.Submitted or AttemptStatus.Expired)
         {
-            return;
+            return await GetResultAsync(userId, attemptId);
+            ;
         }
 
         attempt.FinishedAt = DateTime.UtcNow;
@@ -101,19 +135,28 @@ public class AttemptService : IAttemptService
 
         await _attemptRepository.FinishAsync(attempt);
 
-        try
+        /*try
         {
             await CalculateAndSaveResultAsync(attempt, exam);
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error during automatic result calculation for attempt {attemptId}: {ex.Message}");
-        }
+        }*/
+
+        var resultModel = await CalculateAndSaveResultAsync(attempt, exam);
+        return _mapper.Map<AttemptResultDto>(resultModel);
     }
-    
-    public async Task<AttemptResultDto> GetResultAsync(Guid attemptId)
+
+    public async Task<AttemptResultDto> GetResultAsync(Guid userId, Guid attemptId)
     {
         var attempt = await GetEntityByIdAsync(attemptId);
+
+        if (attempt is null)
+            throw new KeyNotFoundException("Спробу не знайдено.");
+
+        if (attempt.UserId != userId)
+            throw new UnauthorizedAccessException("Ви не маєте доступу до цієї спроби."); //TODO: maybe add validation?
 
         if (attempt.AttemptResultId.HasValue)
         {
@@ -126,7 +169,18 @@ public class AttemptService : IAttemptService
         return _mapper.Map<AttemptResultDto>(resultModel);
     }
 
-    private async Task<AttemptResultModel> CalculateAndSaveResultAsync(UserExamAttemptModel attempt, ExamAggregateModel exam)
+    public async Task<UserExamAttemptModel> GetEntityByIdAsync(Guid id)
+    {
+        var examAttempt = await _attemptRepository.GetByIdAsync(id);
+
+        if (examAttempt is null)
+            throw new KeyNotFoundException($"Lecture with ID {id} not found");
+
+        return examAttempt;
+    }
+
+    private async Task<AttemptResultModel> CalculateAndSaveResultAsync(UserExamAttemptModel attempt,
+        ExamAggregateModel exam)
     {
         if (attempt.AttemptResultId.HasValue)
         {
@@ -187,15 +241,17 @@ public class AttemptService : IAttemptService
         var resultToSave = _mapper.Map<AttemptResultModel>(result);
 
         await _attemptResultRepository.SaveAttemptResultAsync(attempt.Id, resultToSave);
-        
+
         attempt.AttemptResultId = resultToSave.Id;
-        attempt.Status = AttemptStatus.Checked; //TODO add checking status for unvalidated attempts (for example, if teacher had to check it manually)
-            
+        attempt.Status =
+            AttemptStatus
+                .Checked; //TODO add checking status for unvalidated attempts (for example, if teacher had to check it manually)
+
         await _attemptRepository.UpdateAsync(attempt);
 
         return resultToSave;
     }
-    
+
     private async Task<QuestionResultDto> CheckCorrectAnswersForQuestionAsync(Guid attemptId, Guid questionId,
         ExamAggregateModel exam)
     {
@@ -262,15 +318,5 @@ public class AttemptService : IAttemptService
         }
 
         return result;
-    }
-
-    public async Task<UserExamAttemptModel> GetEntityByIdAsync(Guid id)
-    {
-        var examAttempt = await _attemptRepository.GetByIdAsync(id);
-
-        if (examAttempt is null)
-            throw new KeyNotFoundException($"Lecture with ID {id} not found");
-
-        return examAttempt;
     }
 }

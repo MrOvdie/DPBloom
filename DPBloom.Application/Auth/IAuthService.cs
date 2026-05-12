@@ -1,7 +1,11 @@
-﻿namespace DPBloom.Application.Auth;
+﻿using DPBloom.Application.Auth.Contracts;
+using DPBloom.Application.User;
+
+namespace DPBloom.Application.Auth;
 
 public interface IAuthService
 {
-    Task<bool> RegisterAsync(string email, string password, string firstName, string lastName);
-    Task<string?> LoginAsync(string email, string password); //TODO: add login. Return token???
+    Task<bool> RegisterAsync(RegisterUserDto userDto);
+    Task<AuthResponseDto> LoginAsync(LoginRequestDto request);
+    Task<UserProfileDto?> GetUserProfileAsync(Guid userId);
 }

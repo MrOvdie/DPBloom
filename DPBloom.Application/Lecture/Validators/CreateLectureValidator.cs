@@ -18,12 +18,6 @@ public class CreateLectureValidator : AbstractValidator<CreateLecture>
             .Must(d => string.IsNullOrEmpty(d) || d.Length >= 3)
             .WithMessage("Description must be at least 3 characters long.");
 
-        RuleFor(cl => cl.CourseId)
-            .NotEmpty().WithMessage("CourseId is required");
-
-        RuleFor(cl => cl.AuthorId)
-            .NotEmpty().WithMessage("AuthorId is required");
-
         RuleForEach(cl => cl.ContentLinks)
             .Must(link => string.IsNullOrEmpty(link) || Uri.IsWellFormedUriString(link, UriKind.Absolute))
             .WithMessage("ContentLink must be a valid URL");

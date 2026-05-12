@@ -1,6 +1,4 @@
-﻿using DPBloom.Application.Base;
-
-namespace TestOfTesting.DTOs;
+﻿namespace DPBloom.Application.Exam.Contracts.Create;
 
 public class CreateOptionDto
 {

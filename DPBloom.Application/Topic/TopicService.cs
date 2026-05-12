@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using DPBloom.Application.Auth;
 using DPBloom.Application.Topic.Contracts;
 using DPBloom.Core.Topic;
 using FluentValidation;
@@ -11,14 +12,16 @@ public class TopicService : ITopicService
     private readonly IMapper _mapper;
     private readonly IValidator<CreateTopic> _createTopicValidator;
     private readonly IValidator<UpdateTopic> _updateTopicValidator;
+    private readonly ICurrentUserService _currentUserService;
 
     public TopicService(ITopicRepository topicRepository, IMapper mapper, IValidator<CreateTopic> createTopicValidator,
-        IValidator<UpdateTopic> updateTopicValidator)
+        IValidator<UpdateTopic> updateTopicValidator, ICurrentUserService currentUserService)
     {
         _topicRepository = topicRepository;
         _mapper = mapper;
         _createTopicValidator = createTopicValidator;
         _updateTopicValidator = updateTopicValidator;
+        _currentUserService = currentUserService;
     }
 
     public async Task<IEnumerable<TopicDto>> GetAllAsync()
@@ -56,7 +59,7 @@ public class TopicService : ITopicService
         return _mapper.Map<IEnumerable<TopicDto>>(topics);
     }
 
-    public async Task<TopicDto> CreateAsync(CreateTopic createTopic)
+    public async Task<TopicDto> CreateAsync(Guid courseId, CreateTopic createTopic)
     {
         var validationResult = await _createTopicValidator.ValidateAsync(createTopic);
 
@@ -64,11 +67,11 @@ public class TopicService : ITopicService
             throw new ValidationException(validationResult.Errors);
 
         var createTopicModel = _mapper.Map<TopicModel>(createTopic);
-        createTopicModel.Id = Guid.NewGuid();
-        createTopicModel.CreatedOn = createTopicModel.UpdatedOn = DateTime.UtcNow;
+        createTopicModel.AuthorId = _currentUserService.GetUserId();
+        createTopicModel.CourseId = courseId;
 
         if (await _topicRepository.ExistsAsync(tc =>
-                tc.Title == createTopicModel.Title && tc.CourseId.Equals(createTopic.CourseId) /*&& !tc.IsDeleted*/))
+                tc.Title == createTopicModel.Title && tc.CourseId.Equals(courseId)))
             throw new InvalidOperationException(
                 $"Topic with name {createTopicModel.Title} already exists in this course");
 
@@ -85,12 +88,14 @@ public class TopicService : ITopicService
             throw new ValidationException(validationResult.Errors);
 
         var existingTopic = await GetEntityByIdAsync(topicId);
+        
+        updateTopic.CourseId ??= existingTopic.CourseId;
 
-        var updateTopicModel = _mapper.Map<TopicModel>(updateTopic);
-        updateTopicModel.Id = existingTopic.Id;
-        updateTopicModel.UpdatedOn = DateTime.UtcNow;
+        var updatedExistedTopicModel = _mapper.Map(updateTopic, existingTopic);
+        
+        updatedExistedTopicModel.UpdatedOn = DateTime.UtcNow;
 
-        var updatedCourse = await _topicRepository.UpdateAsync(updateTopicModel);
+        var updatedCourse = await _topicRepository.UpdateAsync(updatedExistedTopicModel);
 
         return _mapper.Map<TopicDto>(updatedCourse);
     }
@@ -99,18 +104,16 @@ public class TopicService : ITopicService
     {
         var topic = await GetEntityByIdAsync(topicId);
 
-        await _topicRepository.DeleteAsync(topic);
+        await _topicRepository.DeleteAsync(topicId);
 
         return _mapper.Map<TopicDto>(topic);
     }
 
     public async Task<TopicDto> RestoreAsync(Guid topicId)
     {
-        var topic = await GetEntityByIdAsync(topicId);
+        var restoredTopic = await _topicRepository.RestoreAsync(topicId);
 
-        await _topicRepository.RestoreAsync(topic);
-
-        return _mapper.Map<TopicDto>(topic);
+        return _mapper.Map<TopicDto>(restoredTopic);
     }
 
     public async Task<TopicModel> GetEntityByIdAsync(Guid id)

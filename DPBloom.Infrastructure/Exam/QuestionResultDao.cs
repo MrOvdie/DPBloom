@@ -20,4 +20,5 @@ public class QuestionResultDao : EntityDaoBase<Guid>
 
     public QuestionDao Question { get; set; }
     public UserExamAttemptDao Attempt { get; set; }
+    public AttemptResultDao AttemptResult { get; set; }
 }

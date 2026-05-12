@@ -1,11 +1,8 @@
 ﻿using AutoMapper;
 using DPBloom.Application.Topic;
-using DPBloom.Core.Course;
 using DPBloom.Core.Topic;
 using DPBloom.Infrastructure.Base;
-using DPBloom.Infrastructure.Course;
 using DPBloom.Infrastructure.Data;
-using DPBloom.Infrastructure.Exam;
 using Microsoft.EntityFrameworkCore;
 
 namespace DPBloom.Infrastructure.Topic;
@@ -17,7 +14,7 @@ public class TopicRepository : RepositoryBase<TopicModel,TopicDao, ApplicationDb
     {
     }
 
-    public async Task<IReadOnlyList<TopicModel>> GetByCourseAsync(string courseId)
+    public async Task<IReadOnlyList<TopicModel>> GetByCourseAsync(Guid courseId)
     {
         var topicsByCourse = await DbContext.Set<TopicDao>()
             .Where(l => l.CourseId.Equals(courseId))
@@ -26,7 +23,7 @@ public class TopicRepository : RepositoryBase<TopicModel,TopicDao, ApplicationDb
         return Mapper.Map<List<TopicModel>>(topicsByCourse);
     }
 
-    public async Task<IReadOnlyList<TopicModel>> GetByAuthorAsync(string authorId)
+    public async Task<IReadOnlyList<TopicModel>> GetByAuthorAsync(Guid authorId)
     {
         var topicsByAuthor = await DbContext.Set<TopicDao>()
             .Where(l => l.AuthorId.Equals(authorId))

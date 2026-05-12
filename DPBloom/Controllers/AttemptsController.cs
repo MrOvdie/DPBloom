@@ -7,36 +7,76 @@ using Microsoft.AspNetCore.Mvc;
 namespace DPBloom.Controllers;
 
 [ApiController]
-[Route("api/attempts")]
+[Route("api/[controller]")]
 [Authorize]
 public class AttemptsController : ControllerBase
 {
-    private readonly IAttemptService _svc;
-    public AttemptsController(IAttemptService svc) => _svc = svc;
+    private readonly IAttemptService _attemptService;
 
-    [HttpPost("start/{examId}")]
-    public async Task<IActionResult> Start(Guid examId)
+    public AttemptsController(IAttemptService attemptService)
     {
-        Guid userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-        var attemptId = await _svc.StartAsync(userId, examId);
-        return Ok(attemptId);
+        _attemptService = attemptService;
     }
 
-    [HttpPost("{attemptId}/answer")]
-    public async Task<IActionResult> Submit(SubmitAnswerDto dto)
+    // Почати нову спробу проходження екзамену
+    [HttpPost("start/{examId:guid}")]
+    public async Task<IActionResult> StartAttempt(Guid examId)
     {
-        await _svc.SubmitAnswerAsync(dto);
-        return NoContent();
+        var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userIdString, out var userId)) return Unauthorized();
+
+        // Сервіс фіксує старт і повертає ID спроби
+        var attemptId = await _attemptService.StartAsync(userId, examId);
+
+        return Ok(new { AttemptId = attemptId });
     }
 
-    [HttpPost("{attemptId}/finish")]
-    public async Task<IActionResult> Finish(Guid attemptId)
+    // Відправити відповідь на конкретне запитання
+    [HttpPost("{attemptId:guid}/submit")]
+    public async Task<IActionResult> SubmitAnswer(Guid attemptId, [FromBody] SubmitAnswerDto request)
     {
-        await _svc.FinishAsync(attemptId);
-        return NoContent();
+        // Контролер витягує ID з токена (він це вміє і має право робити)
+        var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userIdString, out var userId)) return Unauthorized();
+
+        try
+        {
+            // Передаємо ID в сервіс
+            await _attemptService.SubmitAnswerAsync(userId, attemptId, request);
+            return Ok();
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            // Перехоплюємо виняток від сервісу і перетворюємо його на правильний HTTP статус (403 Forbidden)
+            return Forbid(ex.Message); // або StatusCode(403, ex.Message)
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
     }
 
-    [HttpGet("{attemptId}/result")]
-    public async Task<IActionResult> Result(Guid attemptId) =>
-        Ok(await _svc.GetResultAsync(attemptId));
+    // Завершити спробу та отримати підсумковий результат
+    [HttpPost("{attemptId:guid}/finish")]
+    public async Task<IActionResult> FinishAttempt(Guid attemptId)
+    {
+        var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userIdString, out var userId)) return Unauthorized();
+
+        var result = await _attemptService.FinishAsync(userId, attemptId);
+        return Ok(result); // Повертає AttemptResultDto
+    }
+
+    // Отримати результати вже завершеної спроби (наприклад, для перегляду історії)
+    [HttpGet("{attemptId:guid}/result")]
+    public async Task<IActionResult> GetResult(Guid attemptId)
+    {
+        var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userIdString, out var userId)) return Unauthorized();
+
+        var result = await _attemptService.GetResultAsync(userId, attemptId);
+        if (result is null) return NotFound();
+
+        return Ok(result);
+    }
 }

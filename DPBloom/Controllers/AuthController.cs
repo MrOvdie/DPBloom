@@ -1,4 +1,5 @@
 ﻿// DPBloom/Controllers/AuthController.cs
+
 using DPBloom.Application.Auth;
 using DPBloom.Application.Auth.Contracts;
 using Microsoft.AspNetCore.Authorization;
@@ -19,33 +20,25 @@ public class AuthController : ControllerBase
 
     [HttpPost("register")]
     [AllowAnonymous]
-    public async Task<IActionResult> Register([FromBody] RegisterRequestDto request)
+    public async Task<IActionResult> Register([FromBody] RegisterUserDto user)
     {
-        var isRegistered = await _authService.RegisterAsync(
-            request.Email, 
-            request.Password, 
-            request.FirstName, 
-            request.LastName);
+        var isRegistered = await _authService.RegisterAsync(user);
 
         if (!isRegistered)
         {
-            return BadRequest(new { Message = "Користувач з таким email вже існує або пароль не відповідає вимогам безпеки." });
+            return BadRequest(new
+                { Message = "Користувач з таким email вже існує або пароль не відповідає вимогам безпеки." });
         }
 
-        return Ok(new { Message = "Реєстрація пройшла успішно." });
+        return Ok(new { Message = "Registration successful. Please log in." });
     }
 
     [HttpPost("login")]
     [AllowAnonymous]
     public async Task<IActionResult> Login([FromBody] LoginRequestDto request)
     {
-        var token = await _authService.LoginAsync(request.Email, request.Password);
+        var responseDto = await _authService.LoginAsync(request);
 
-        if (string.IsNullOrEmpty(token))
-        {
-            return Unauthorized(new { Message = "Невірний email або пароль." });
-        }
-
-        return Ok(new AuthResponseDto { Token = token });
+        return Ok(responseDto);
     }
 }

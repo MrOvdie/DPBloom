@@ -1,5 +1,6 @@
 ﻿using DPBloom.Infrastructure.Base;
 using DPBloom.Infrastructure.Extensions;
+using DPBloom.Infrastructure.User;
 
 namespace DPBloom.Infrastructure.Exam;
 
@@ -18,4 +19,6 @@ public class UserExamAttemptDao : EntityDaoBase<Guid>, ISoftDelete
     
     public ExamDao Exam { get; set; }
     public ICollection<UserAnswerDao> Answers { get; set; }
+    public ApplicationUser User { get; set; }
+    public AttemptResultDao? AttemptResult { get; set; }
 }

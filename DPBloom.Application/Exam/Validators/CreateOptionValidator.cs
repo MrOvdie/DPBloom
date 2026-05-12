@@ -1,11 +1,11 @@
-﻿using FluentValidation;
-using TestOfTesting.DTOs;
+﻿using DPBloom.Application.Exam.Contracts.Create;
+using FluentValidation;
 
 namespace DPBloom.Application.Exam.Validators;
 
-public class OptionValidator : AbstractValidator<CreateOptionDto>
+public class CreateOptionValidator : AbstractValidator<CreateOptionDto>
 {
-    public OptionValidator()
+    public CreateOptionValidator()
     {
         RuleFor(o => o.Text)
             .NotEmpty().WithMessage("Option text is required.");

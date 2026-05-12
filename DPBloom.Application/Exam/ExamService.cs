@@ -1,8 +1,9 @@
 ﻿using AutoMapper;
-using DPBloom.Application.Exam.Contracts;
+using DPBloom.Application.Auth;
+using DPBloom.Application.Exam.Contracts.Create;
+using DPBloom.Application.Exam.Contracts.Update;
 using DPBloom.Core.Exam;
 using FluentValidation;
-using TestOfTesting.DTOs;
 
 namespace DPBloom.Application.Exam;
 
@@ -12,26 +13,29 @@ public class ExamService : IExamService
     private readonly IMapper _mapper;
     private readonly IValidator<CreateExamDto> _createValidator;
     private readonly IValidator<UpdateExamDto> _updateValidator;
+    private readonly ICurrentUserService _currentUserService;
+    
 
-    public ExamService(IExamRepository examRepository, IMapper mapper, IValidator<CreateExamDto> createValidator, IValidator<UpdateExamDto> updateValidator)
+    public ExamService(IExamRepository examRepository, IMapper mapper, IValidator<CreateExamDto> createValidator, IValidator<UpdateExamDto> updateValidator, ICurrentUserService currentUserService)
     {
         _examRepository = examRepository;
         _mapper = mapper;
         _createValidator = createValidator;
         _updateValidator = updateValidator;
+        _currentUserService = currentUserService;
     }
 
-    public async Task<ExamDetailsDto?> GetExamDetailsAsync(Guid id)
+    public async Task<ExamDetailsDto?> GetExamDetailsAsync(Guid examId)
     {
-        var exam = await _examRepository.GetWithQuestionsAsync(id);
+        var exam = await _examRepository.GetWithQuestionsAsync(examId);
 
         if (exam is null)
-            throw new KeyNotFoundException($"Exam with ID {id} not found");
+            throw new KeyNotFoundException($"Exam with ID {examId} not found");
 
         return _mapper.Map<ExamDetailsDto>(exam);
     }
 
-    public async Task<Guid> CreateExamAsync(CreateExamDto createExam)
+    public async Task<Guid> CreateExamAsync(Guid courseId, CreateExamDto createExam)
     {
         var validationResult = await _createValidator.ValidateAsync(createExam);
 
@@ -39,15 +43,16 @@ public class ExamService : IExamService
             throw new ValidationException(validationResult.Errors);
 
         if (await _examRepository.ExistsAsync(e =>
-                e.Title == createExam.Title && e.CourseId.Equals(createExam.CourseId)/* && !e.IsDeleted*/))
+                e.Title == createExam.Title && e.CourseId.Equals(courseId)))
             throw new InvalidOperationException($"Exam with name {createExam.Title} already exists");
 
         var createExamModel = _mapper.Map<ExamAggregateModel>(createExam);
-        createExamModel.Exam.Id = Guid.NewGuid();
+        createExamModel.Exam.AuthorId = _currentUserService.GetUserId();
+        createExamModel.Exam.CourseId = courseId;
         foreach (var question in createExamModel.Questions)
             question.Id = Guid.NewGuid();
 
-        if (createExamModel.AnswerOptions != null)
+        if (createExamModel.AnswerOptions is not null)
             foreach (var option in createExamModel.AnswerOptions)
                 option.Id = Guid.NewGuid();
         
@@ -65,18 +70,23 @@ public class ExamService : IExamService
         
         var existingExam = await GetEntityByIdAsync(examId);
         //TODO: maybe incorrect mapping
-        var updateExamModel = _mapper.Map<ExamAggregateModel>(updateExam);
-        updateExamModel.Exam.Id = existingExam.Exam.Id;
-        updateExamModel.Exam.UpdatedOn = DateTime.UtcNow;
         
-        var updatedExam = await _examRepository.UpdateExamWithDetailsAsync(updateExamModel);
+        updateExam.CourseId ??= existingExam.Exam.CourseId;
+        
+        updateExam.TopicId ??= existingExam.Exam.TopicId;
+        
+        var updatedExistedExamModel = _mapper.Map(updateExam, existingExam);
+        
+        updatedExistedExamModel.Exam.UpdatedOn = DateTime.UtcNow;
+        
+        var updatedExam = await _examRepository.UpdateExamWithDetailsAsync(updatedExistedExamModel);
         
         return _mapper.Map<ExamDetailsDto>(updatedExam);
     }
 
-    public async Task<ExamDetailsDto> DeleteExamAsync(Guid id)
+    public async Task<ExamDetailsDto> DeleteExamAsync(Guid examId)
     {
-        var exam = await GetEntityByIdAsync(id);
+        var exam = await GetEntityByIdAsync(examId);
 
         await _examRepository.DeleteExamWithDetailsAsync(exam);
         
@@ -84,21 +94,21 @@ public class ExamService : IExamService
         
     }
 
-    public async Task<ExamDetailsDto> RestoreExamAsync(Guid id)
+    public async Task<ExamDetailsDto> RestoreExamAsync(Guid examId)
     {
-        var exam = await GetEntityByIdAsync(id);
+        var exam = await GetEntityByIdAsync(examId);
         
         await _examRepository.RestoreExamWithDetailsAsync(exam);
         
         return _mapper.Map<ExamDetailsDto>(exam);
     }
     
-    public async Task<ExamAggregateModel> GetEntityByIdAsync(Guid id)
+    public async Task<ExamAggregateModel> GetEntityByIdAsync(Guid examId)
     {
-        var lecture = await _examRepository.GetWithQuestionsAsync(id);
+        var lecture = await _examRepository.GetWithQuestionsAsync(examId);
 
         if (lecture is null)
-            throw new KeyNotFoundException($"Lecture with ID {id} not found");
+            throw new KeyNotFoundException($"Lecture with ID {examId} not found");
 
         return lecture;
     }

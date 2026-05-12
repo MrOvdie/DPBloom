@@ -1,5 +1,6 @@
-﻿// DPBloom/Controllers/UserController.cs
-using System.Security.Claims;
+﻿using System.Security.Claims;
+using DPBloom.Application.Auth;
+using DPBloom.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -7,37 +8,44 @@ namespace DPBloom.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize] // Захищаємо всі ендпоінти цього контролера
+[Authorize]
 public class UserController : ControllerBase
 {
-    [HttpGet("me")]
-    public IActionResult GetCurrentUser()
+    private readonly IAuthService _authService;
+
+    public UserController(IAuthService authService)
     {
-        // Дістаємо ID користувача з Claims токена
-        var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        
-        if (!Guid.TryParse(userIdString, out var userId))
-        {
-            return Unauthorized();
-        }
-
-        // Дістаємо Email та Роль для демонстрації
-        var email = User.FindFirstValue(ClaimTypes.Name);
-        var role = User.FindFirstValue(ClaimTypes.Role);
-
-        return Ok(new 
-        { 
-            Id = userId, 
-            Email = email, 
-            Role = role 
-        });
+        _authService = authService;
     }
 
-    // Приклад використання специфічної політики доступу
+    [HttpGet("me")]
+    public async Task<IActionResult> GetCurrentUser()
+    {
+        var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+    
+        if (!Guid.TryParse(userIdString, out var userId))
+            return Unauthorized();
+
+        var profile = await _authService.GetUserProfileAsync(userId);
+
+        if (profile == null)
+            return NotFound("Користувача не знайдено.");
+
+        return Ok(profile);
+    }
+    
+    [HttpGet("check-my-claims")]
+    [Authorize]
+    public IActionResult CheckClaims()
+    {
+        var claims = User.Claims.Select(c => new { c.Type, c.Value }).ToList();
+        return Ok(claims);
+    }
+
     [HttpGet("admin-data")]
     [Authorize(Policy = "RequireAdminPrivileges")]
     public IActionResult GetAdminData()
     {
-        return Ok(new { Message = "Це бачать тільки користувачі з правами адміністратора." });
+        return Ok(new { Message = "Це бачать тільки користувачі з правами адміністратора." }); //TODO: rework
     }
 }
