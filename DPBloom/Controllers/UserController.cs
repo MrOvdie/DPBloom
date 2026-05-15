@@ -1,6 +1,5 @@
 ﻿using System.Security.Claims;
 using DPBloom.Application.Auth;
-using DPBloom.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -29,23 +28,17 @@ public class UserController : ControllerBase
         var profile = await _authService.GetUserProfileAsync(userId);
 
         if (profile == null)
-            return NotFound("Користувача не знайдено.");
+            return NotFound("Can't find user.");
 
         return Ok(profile);
     }
     
     [HttpGet("check-my-claims")]
-    [Authorize]
+    [Authorize(Policy = "RequireAdminPrivileges")]
     public IActionResult CheckClaims()
     {
         var claims = User.Claims.Select(c => new { c.Type, c.Value }).ToList();
+        
         return Ok(claims);
-    }
-
-    [HttpGet("admin-data")]
-    [Authorize(Policy = "RequireAdminPrivileges")]
-    public IActionResult GetAdminData()
-    {
-        return Ok(new { Message = "Це бачать тільки користувачі з правами адміністратора." }); //TODO: rework
     }
 }

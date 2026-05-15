@@ -8,11 +8,11 @@ namespace DPBloom.Application.Enrollment;
 public class EnrollmentService : IEnrollmentService
 {
     private readonly IValidator<CreateEnrollment> _createEnrollmentValidator;
-    private readonly User.IEnrollmentRepository _enrollmentRepository;
+    private readonly IEnrollmentRepository _enrollmentRepository;
     private readonly IMapper _mapper;
     private readonly IValidator<UpdateEnrollment> _updateEnrollmentValidator;
 
-    public EnrollmentService(User.IEnrollmentRepository enrollmentRepository, IMapper mapper,
+    public EnrollmentService(IEnrollmentRepository enrollmentRepository, IMapper mapper,
         IValidator<CreateEnrollment> createEnrollmentValidator, IValidator<UpdateEnrollment> updateEnrollmentValidator)
     {
         _enrollmentRepository = enrollmentRepository;

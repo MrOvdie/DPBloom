@@ -6,4 +6,5 @@ namespace DPBloom.Application.Auth;
 public interface IJwtTokenGenerator
 {
     string GenerateToken(UserModel user, IReadOnlyList<Claim> claims);
+    string GenerateToken(UserModel userModel);
 }

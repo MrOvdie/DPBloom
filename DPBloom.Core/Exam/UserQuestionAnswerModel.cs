@@ -2,7 +2,7 @@
 
 namespace DPBloom.Core.Exam;
 
-public class UserAnswerModel : EntityBase<Guid>
+public class UserQuestionAnswerModel : EntityBase<Guid>
 {
     public Guid AttemptId { get; set; }
     public Guid QuestionId { get; set; }

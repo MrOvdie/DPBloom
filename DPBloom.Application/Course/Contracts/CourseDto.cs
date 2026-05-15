@@ -1,6 +1,6 @@
 ﻿using DPBloom.Application.Base;
 
-namespace DPBloom.Application.Course;
+namespace DPBloom.Application.Course.Contracts;
 
 public class CourseDto : ModelBase<Guid>
 {

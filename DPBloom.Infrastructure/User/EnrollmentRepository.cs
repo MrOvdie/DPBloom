@@ -1,5 +1,5 @@
 ﻿using AutoMapper;
-using DPBloom.Application.User;
+using DPBloom.Application.Enrollment;
 using DPBloom.Core.User;
 using DPBloom.Infrastructure.Base;
 using DPBloom.Infrastructure.Data;

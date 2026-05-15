@@ -21,14 +21,24 @@ public class ExamsController : ControllerBase
         _bloomPredictor = bloomPredictor;
     }
 
-    /*[HttpGet]
+    [HttpGet("all")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> GetAll()
     {
-        var exams = await _examService.GetAllAsync();
+        var exams = await _examService.GetAllExamsAsync();
+       
         return Ok(exams);
-    }*/ //TODO: add this one and also exams by course!!!
+    }
 
+    [HttpGet("course/{courseId:guid}")]
+    [Authorize]
+    public async Task<IActionResult> GetExamsByCourse(Guid courseId)
+    {
+        var exams = await _examService.GetExamsByCourseAsync(courseId);
+        
+        return Ok(exams);
+    }
+    
     [HttpGet("{id:guid}")]
     [Authorize(Roles = "Teacher, Admin")]
     public async Task<IActionResult> GetById(Guid id)

@@ -1,6 +1,8 @@
 ﻿using AutoMapper;
 using DPBloom.Application.Auth;
+using DPBloom.Application.Enrollment;
 using DPBloom.Application.Lecture.Contracts;
+using DPBloom.Application.Topic;
 using DPBloom.Core.Lecture;
 using FluentValidation;
 
@@ -9,69 +11,92 @@ namespace DPBloom.Application.Lecture;
 public class LectureService : ILectureService
 {
     private readonly ILectureRepository _lectureRepository;
+    private readonly IEnrollmentRepository _enrollmentRepository;
+    private readonly ITopicRepository _topicRepository;
     private readonly IMapper _mapper;
     private readonly IValidator<CreateLecture> _createValidator;
     private readonly IValidator<UpdateLecture> _updateValidator;
     private readonly ICurrentUserService _currentUserService;
-    
+
 
     public LectureService(ILectureRepository lectureRepository, IMapper mapper,
-        IValidator<CreateLecture> createValidator, IValidator<UpdateLecture> updateValidator, ICurrentUserService currentUserService)
+        IValidator<CreateLecture> createValidator, IValidator<UpdateLecture> updateValidator,
+        ICurrentUserService currentUserService, IEnrollmentRepository enrollmentRepository,
+        ITopicRepository topicRepository)
     {
         _lectureRepository = lectureRepository;
         _mapper = mapper;
         _createValidator = createValidator;
         _updateValidator = updateValidator;
         _currentUserService = currentUserService;
+        _enrollmentRepository = enrollmentRepository;
+        _topicRepository = topicRepository;
     }
 
-    public async Task<IEnumerable<LectureDto>> GetAllAsync()
+    public async Task<IReadOnlyList<LectureDto>> GetAllAsync()
     {
         var lectures = await _lectureRepository.GetAllAsync();
-        return _mapper.Map<IEnumerable<LectureDto>>(lectures);
+        return _mapper.Map<IReadOnlyList<LectureDto>>(lectures);
     }
 
-    public async Task<LectureDto> GetByIdAsync(Guid id)
+    public async Task<LectureDto> GetByIdAsync(Guid courseId)
     {
-        var lecture = await _lectureRepository.GetByIdAsync(id);
+        var lecture = await _lectureRepository.GetByIdAsync(courseId);
 
         if (lecture is null)
-            throw new KeyNotFoundException($"Lecture with ID {id} not found");
-        
+            throw new KeyNotFoundException($"Lecture with ID {courseId} not found");
+
         return _mapper.Map<LectureDto>(lecture);
     }
 
-    public async Task<IEnumerable<LectureDto>> GetLectureByNameAsync(string lectureName)
+    public async Task<LectureDto> GetByIdWithAccessAsync(Guid lectureId)
+    {
+        var courseId = await _lectureRepository.GetCourseIdByLectureIdAsync(lectureId);
+
+        if (courseId is null)
+            throw new KeyNotFoundException($"Can't find CourseId in lecture {lectureId}");
+
+        await EnsureHasAccessToGenericLectureContent(lectureId);
+
+        var lecture = await _lectureRepository.GetByIdAsync(lectureId);
+
+        return _mapper.Map<LectureDto>(lecture);
+    }
+
+    public async Task<IReadOnlyList<LectureDto>> GetLectureByNameAsync(string lectureName)
     {
         var lectures = await _lectureRepository.GetAsync(predicate: l => l.Title == lectureName);
 
         if (lectures is null)
             throw new KeyNotFoundException($"Lectures with Title {lectureName} not found");
 
-        return _mapper.Map<IEnumerable<LectureDto>>(lectures);
+        return _mapper.Map<IReadOnlyList<LectureDto>>(lectures);
     }
 
-    public async Task<IEnumerable<LectureDto>> GetLecturesByCourseAsync(Guid courseId)
+    public async Task<IReadOnlyList<LectureDto>> GetLecturesByCourseAsync(Guid courseId)
     {
+        var userId = _currentUserService.GetUserId();
+
+        await EnsureStudentIsEnrolledToCourseAsync(courseId, userId);
+        
         var lectures = await _lectureRepository.GetByCourseAsync(courseId);
 
-        if (lectures is null)
-            throw new KeyNotFoundException($"Lectures with CourseId {courseId} not found");
-
-
-        return _mapper.Map<IEnumerable<LectureDto>>(lectures);
+        return _mapper.Map<IReadOnlyList<LectureDto>>(lectures);
     }
 
     public async Task<IEnumerable<LectureDto>> GetLecturesByTopicAsync(Guid topicId)
     {
-        //TODO: add proper topic handler, not just an id
-        var lectures = await _lectureRepository.GetByTopicAsync(topicId);
+        var userId = _currentUserService.GetUserId();
 
-        if (lectures is null)
-            throw new KeyNotFoundException($"Lectures with TopicId {topicId} not found");
+        var courseId = await _topicRepository.GetCourseIdByTopicIdAsync(topicId);
+        if (courseId is null)
+            throw new KeyNotFoundException($"Can't find CourseId in lecture {topicId}");
 
+        await EnsureStudentIsEnrolledToCourseAsync(courseId.Value, userId);
 
-        return _mapper.Map<IEnumerable<LectureDto>>(lectures);
+        var lecture = await _lectureRepository.GetByCourseAsync(courseId.Value);
+
+        return _mapper.Map<IReadOnlyList<LectureDto>>(lecture);
     }
 
     public async Task<IEnumerable<LectureDto>> GetLectureByAuthorAsync(Guid authorId)
@@ -93,10 +118,11 @@ public class LectureService : ILectureService
 
         if (await _lectureRepository.ExistsAsync(l =>
                 l.Title == createLecture.Title && l.CourseId.Equals(courseId)))
-            throw new InvalidOperationException($"Lecture with name {createLecture.Title} already exists in this course");
+            throw new InvalidOperationException(
+                $"Lecture with name {createLecture.Title} already exists in this course");
 
         var createLectureModel = _mapper.Map<LectureModel>(createLecture);
-        createLectureModel.AuthorId = _currentUserService.GetUserId();
+        createLectureModel.AuthorId = createLectureModel.LastUpdaterId = _currentUserService.GetUserId();
         createLectureModel.CourseId = courseId;
 
         var createdLecture = await _lectureRepository.AddAsync(createLectureModel);
@@ -111,15 +137,17 @@ public class LectureService : ILectureService
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
 
+        await EnsureUserHasAccessToLectureModifyingAsync(lectureId);
+
         var existingLecture = await GetEntityByIdAsync(lectureId);
-        
+
         updateLecture.CourseId ??= existingLecture.CourseId;
-        
+
         updateLecture.TopicId ??= existingLecture.TopicId;
 
         var updatedExistedLectureModel = _mapper.Map(updateLecture, existingLecture);
-        
         updatedExistedLectureModel.UpdatedOn = DateTime.UtcNow;
+        updatedExistedLectureModel.LastUpdaterId = _currentUserService.GetUserId();
 
         var updatedLecture = await _lectureRepository.UpdateAsync(updatedExistedLectureModel);
 
@@ -128,17 +156,21 @@ public class LectureService : ILectureService
 
     public async Task<LectureDto> DeleteAsync(Guid lectureId)
     {
+        await EnsureUserHasAccessToLectureModifyingAsync(lectureId);
+
         var lecture = await GetEntityByIdAsync(lectureId);
 
         await _lectureRepository.DeleteAsync(lectureId);
-        
+
         return _mapper.Map<LectureDto>(lecture);
     }
 
     public async Task<LectureDto> RestoreAsync(Guid lectureId)
     {
+        await EnsureUserHasAccessToLectureModifyingAsync(lectureId);
+
         var restoredLecture = await _lectureRepository.RestoreAsync(lectureId);
-        
+
         return _mapper.Map<LectureDto>(restoredLecture);
     }
 
@@ -150,5 +182,55 @@ public class LectureService : ILectureService
             throw new KeyNotFoundException($"Lecture with ID {id} not found");
 
         return lecture;
+    }
+    
+    private async Task EnsureStudentIsEnrolledToCourseAsync(Guid courseId, Guid studentId)
+    {
+        var isEnrolled = await _enrollmentRepository.ExistsAsync(studentId, courseId);
+        if (!isEnrolled)
+            throw new KeyNotFoundException("User is not enrolled in this course.");
+    }
+
+    private async Task EnsureStudentIsEnrolledAsync(Guid lectureId, Guid studentId)
+    {
+        var courseId = await _lectureRepository.GetCourseIdByLectureIdAsync(lectureId);
+        if (courseId is null) 
+            throw new KeyNotFoundException("Course not found.");
+        
+        var isEnrolled = await _enrollmentRepository.ExistsAsync(studentId, courseId.Value);
+        if (!isEnrolled)
+            throw new KeyNotFoundException("User is not enrolled in this course.");
+    }
+
+    private async Task EnsureHasAccessToGenericLectureContent(Guid lectureId)
+    {
+        if (_currentUserService.IsAdmin()) return;
+
+        var currentUserId = _currentUserService.GetUserId();
+
+        var teacherId = await _lectureRepository.IsLectureAuthorAsync(lectureId, currentUserId);
+
+        if (teacherId) return;
+
+        await EnsureStudentIsEnrolledAsync(lectureId, currentUserId);
+    }
+    
+    private async Task EnsureUserHasAccessToLectureModifyingAsync(Guid lectureId)
+    {
+        var isAdmin = _currentUserService.IsAdmin();
+        if (isAdmin)
+            return;
+
+        var userId = _currentUserService.GetUserId();
+        var isAuthor = await _lectureRepository.IsLectureAuthorAsync(lectureId, userId);
+
+        if (!isAuthor)
+        {
+            var lectureExists = await _lectureRepository.ExistsAsync(l => l.Id.Equals(lectureId));
+            if (!lectureExists)
+                throw new KeyNotFoundException("Lecture not found.");
+
+            throw new UnauthorizedAccessException("Only author or admins can modify this lecture.");
+        }
     }
 }

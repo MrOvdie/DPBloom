@@ -6,10 +6,15 @@ namespace DPBloom.Application.Exam;
 
 public interface IAttemptService
 {
-    Task<Guid> StartAsync(Guid userId, Guid examId);
-    Task SubmitAnswerAsync(Guid userId, Guid attemptId, SubmitAnswerDto dto);
+    Task<Guid> StartAsync(Guid examId);
+    Task SubmitAnswerAsync(Guid attemptId, SubmitAnswerDto dto);
     Task SaveAllAnswersAsync(Guid attemptId, List<SubmitAnswerDto> answers);
-    Task<AttemptResultDto> FinishAsync(Guid userId, Guid attemptId);
-    Task<AttemptResultDto> GetResultAsync(Guid userId, Guid attemptId);
-    Task<UserExamAttemptModel> GetEntityByIdAsync(Guid id);
+    Task<AttemptResultDto> FinishAsync(Guid attemptId);
+    Task<AttemptResultDto> GetResultAsync(Guid attemptId);
+    Task<IReadOnlyList<AttemptResultRecordDto>> GetAttemptResultsByExamAsync(Guid examId);
+
+    Task<AttemptResultDto> CheckOpenTextAnswerAsync(Guid attemptResultId,
+        IReadOnlyList<TeacherEvaluationDto> teacherEvaluations, Guid examId);
+
+    Task<IReadOnlyList<AttemptResultRecordDto>> GetAttemptResultsForManualReviewByExamAsync(Guid examId);
 }

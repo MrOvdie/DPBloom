@@ -31,4 +31,18 @@ public class TopicRepository : RepositoryBase<TopicModel,TopicDao, ApplicationDb
         
         return Mapper.Map<List<TopicModel>>(topicsByAuthor);
     }
+    
+    public async Task<Guid?> GetCourseIdByTopicIdAsync(Guid topicId)
+    {
+        return await DbContext.Topics
+            .Where(l => l.Id == topicId)
+            .Select(l => l.CourseId)
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task<bool> IsTopicAuthorAsync(Guid topicId, Guid userId)
+    {
+        return await DbContext.Topics
+            .AnyAsync(c => c.Id == topicId && c.AuthorId == userId);
+    }
 }

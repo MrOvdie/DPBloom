@@ -1,4 +1,5 @@
-﻿using DPBloom.Infrastructure.Base;
+﻿using DPBloom.Core.Exam.Enums;
+using DPBloom.Infrastructure.Base;
 using DPBloom.Infrastructure.Extensions;
 
 namespace DPBloom.Infrastructure.Exam;
@@ -11,7 +12,7 @@ public class QuestionDao : EntityDaoBase<Guid>, ISoftDelete
     public double ScoreWeight { get; set; }
     public int Type { get; set; }
     public int Level { get; set; }
-    public int CheckingType { get; set; }
+    public CheckingType CheckingType { get; set; }
     public bool IsDeleted { get; set; }
     public DateTime? DeletedOn { get; set; }
     

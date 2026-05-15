@@ -1,10 +1,9 @@
 ﻿using DPBloom.Application.Base;
 
-namespace DPBloom.Application.Exam;
+namespace DPBloom.Application.Exam.Contracts;
 
 public class ExamDetailsDto : ModelBase<Guid>
 {
-    //TODO: add UserId
     public string Title { get; set; }
     public string? Description { get; set; }
     public Guid CourseId { get; set; }

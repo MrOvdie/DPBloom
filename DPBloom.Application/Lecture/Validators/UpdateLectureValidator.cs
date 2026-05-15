@@ -20,6 +20,10 @@ public class UpdateLectureValidator : AbstractValidator<UpdateLecture>
             .MinimumLength(3).When(ul => !string.IsNullOrEmpty(ul.Description))
             .WithMessage("Description must be at least 3 characters long.");
         
+        RuleFor(cl => cl.Content)
+            .NotEmpty().WithMessage("Content is required.")
+            .MaximumLength(30000).WithMessage("Content must be at most 30000 characters long.");
+        
         RuleForEach(ul => ul.ContentLinks)
             .Must(link => string.IsNullOrEmpty(link) || Uri.IsWellFormedUriString(link, UriKind.Absolute))
             .WithMessage("ContentLink must be a valid URL");

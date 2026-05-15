@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json.Serialization;
 using AutoMapper;
 using AutoMapper.Extensions.ExpressionMapping;
 using DPBloom.Application.ANN;
@@ -13,8 +14,10 @@ using DPBloom.Application.Lecture;
 using DPBloom.Application.Topic;
 using DPBloom.Application.User;
 using DPBloom.Auth;
+using DPBloom.Core.User;
 using DPBloom.Infrastructure.ANN;
 using DPBloom.Infrastructure.Auth;
+using DPBloom.Infrastructure.BackgroundJobs;
 using DPBloom.Infrastructure.Bloom;
 using DPBloom.Infrastructure.Course;
 using DPBloom.Infrastructure.Data;
@@ -30,11 +33,15 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Scalar.AspNetCore;
-using IEnrollmentRepository = DPBloom.Application.User.IEnrollmentRepository;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        // Цей конвертер змусить систему розуміти енуми як текст
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
 
 builder.Services.AddMediatR(cfg => { cfg.RegisterServicesFromAssembly(typeof(CourseService).Assembly); });
 
@@ -70,6 +77,8 @@ builder.Services.AddAutoMapper(config =>
 });
 
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddHostedService<ExpiredAttemptCleaner>();
+builder.Services.AddHostedService<ExpiredAttemptCleaner>();
 
 // Цей рядок автоматично знайде всі класи-валідатори у тій же збірці, де знаходиться CreateCourseValidator
 builder.Services.AddValidatorsFromAssemblyContaining<CreateCourseValidator>();
@@ -98,6 +107,7 @@ builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
 builder.Services.AddSingleton<IBloomLevelPredictor, OnnxBloomPredictor>();
+builder.Services.AddScoped<IPasswordHasher<UserModel>, PasswordHasher<UserModel>>();
 
 // 7. Налаштування JWT та авторизації
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
@@ -127,6 +137,7 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("RequireTeacherPrivileges", policy => policy.RequireRole("Admin", "Teacher"));
+    options.AddPolicy("RequireAdminPrivileges", policy => policy.RequireRole("Admin"));
     options.AddPolicy("CanManageSystemData", policy => policy.RequireClaim("Permission", "ManageSystemData"));
 }); //TODO: check, if smth else is required
 
@@ -166,10 +177,10 @@ if (app.Environment.IsDevelopment())
 
     app.MapScalarApiReference(options =>
     {
-        options.WithTitle("DPBloom API")
+        options.WithTitle("My API")
             .WithTheme(ScalarTheme.Mars)
             .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient)
-            .WithDarkMode();
+            .EnableDarkMode();
     });
 }
 

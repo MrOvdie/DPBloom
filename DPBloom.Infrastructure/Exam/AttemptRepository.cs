@@ -1,6 +1,9 @@
-﻿using AutoMapper;
+﻿using System.Linq.Dynamic.Core;
+using AutoMapper;
 using DPBloom.Application.Exam;
+using DPBloom.Application.Exam.Contracts;
 using DPBloom.Core.Exam;
+using DPBloom.Core.Exam.Enums;
 using DPBloom.Infrastructure.Base;
 using DPBloom.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -55,18 +58,18 @@ public class AttemptRepository : RepositoryBase<UserExamAttemptModel, UserExamAt
         return Mapper.Map<UserExamAttemptModel>(startAttempt);
     }
 
-    public async Task SubmitAnswerAsync(Guid attemptId, UserAnswerModel answer)
+    public async Task SubmitAnswerAsync(Guid attemptId, UserQuestionAnswerModel questionAnswer)
     {
-        var answerEntity = Mapper.Map<UserAnswerDao>(answer);
+        var answerEntity = Mapper.Map<UserQuestionAnswerDao>(questionAnswer);
 
         DbContext.UserAnswers.Add(answerEntity);
         
         await DbContext.SaveChangesAsync(); //TODO: maybe add some checking confirmation, if entity was updated
     }
 
-    public async Task SaveAllAnswersAsync(Guid attemptId, List<UserAnswerModel> answers)
+    public async Task SaveAllAnswersAsync(Guid attemptId, List<UserQuestionAnswerModel> answers)
     {
-        var answerEntities = Mapper.Map<List<UserAnswerDao>>(answers);
+        var answerEntities = Mapper.Map<List<UserQuestionAnswerDao>>(answers);
         
         await DbContext.UserAnswers.AddRangeAsync(answerEntities);
         
@@ -87,5 +90,53 @@ public class AttemptRepository : RepositoryBase<UserExamAttemptModel, UserExamAt
         var result = await DbContext.QuestionResults.FirstOrDefaultAsync(qr => qr.QuestionId.Equals(questionId) && qr.AttemptId.Equals(attemptId));
         
         return Mapper.Map<QuestionResultModel>(result);
+    }
+    
+    public async Task<Guid?> GetCourseIdByAttemptIdAsync(Guid attemptId)
+    {
+        return await DbContext.Exams
+            .Where(l => l.Id == attemptId)
+            .Select(l => l.CourseId)
+            .FirstOrDefaultAsync();
+    }
+    
+    public async Task<List<ActiveAttemptInfoDto>> GetActiveAttemptsInfoAsync(int batchSize)
+    {
+        return await DbContext.Set<UserExamAttemptDao>()
+            .Where(a => !a.IsDeleted && a.Status == AttemptStatus.InProgress)
+            .OrderBy(a => a.StartedAt)
+            .Take(batchSize)
+            .Select(a => new ActiveAttemptInfoDto
+            {
+                AttemptId = a.Id,
+                StartedAt = a.StartedAt,
+                Duration = a.Exam.Duration
+            })
+            .ToListAsync();
+    }
+    
+    public async Task CloseAttemptsAsync(List<Guid> attemptIds)
+    {
+        if (!attemptIds.Any()) return;
+
+        var now = DateTime.UtcNow;
+
+        await DbContext.Set<UserExamAttemptDao>()
+            .Where(a => attemptIds.Contains(a.Id))
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(a => a.Status, AttemptStatus.Expired)
+                .SetProperty(a => a.FinishedAt, now));
+    }
+    
+    public async Task CloseAllExpiredAttemptsAsync()
+    {
+        var now = DateTime.UtcNow;
+
+        await DbContext.UserExamAttempts
+            .Where(a => a.Status == AttemptStatus.InProgress && 
+                        (a.StartedAt.Add(a.Exam.Duration) < now))
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(a => a.Status, AttemptStatus.Expired)
+                .SetProperty(a => a.FinishedAt, now));
     }
 }

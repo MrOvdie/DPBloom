@@ -1,6 +1,4 @@
-﻿// DPBloom/Controllers/AuthController.cs
-
-using DPBloom.Application.Auth;
+﻿using DPBloom.Application.Auth;
 using DPBloom.Application.Auth.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -27,7 +25,7 @@ public class AuthController : ControllerBase
         if (!isRegistered)
         {
             return BadRequest(new
-                { Message = "Користувач з таким email вже існує або пароль не відповідає вимогам безпеки." });
+                { Message = "User with this email already exists or password is too weak." });
         }
 
         return Ok(new { Message = "Registration successful. Please log in." });
@@ -40,5 +38,23 @@ public class AuthController : ControllerBase
         var responseDto = await _authService.LoginAsync(request);
 
         return Ok(responseDto);
+    }
+
+    [HttpPut("update-profile/{userId:guid}")]
+    [Authorize]
+    public async Task<IActionResult> UpdateUserProfile(Guid userId, [FromBody] UpdateUserProfileDto updateProfileDto)
+    {
+        var result = await _authService.UpdateUserProfileAsync(userId, updateProfileDto);
+       
+        return Ok(result);
+    }
+
+    [HttpPut("change-password/{userId:guid}")]
+    [Authorize]
+    public async Task<IActionResult> ChangePassword(Guid userId, [FromBody] ChangePasswordDto changePasswordDto)
+    {
+        await _authService.ChangeUserPasswordAsync(userId, changePasswordDto);
+        
+        return Ok();
     }
 }

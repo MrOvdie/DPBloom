@@ -32,13 +32,13 @@ public class ExamRepository : RepositoryBase<ExamModel, ExamDao, ApplicationDbCo
         return Mapper.Map<ExamAggregateModel>(examDao);
     }
 
-    public async Task<IReadOnlyList<UserAnswerModel>> GetUserAnswersForQuestionAsync(Guid attemptId, Guid questionId)
+    public async Task<IReadOnlyList<UserQuestionAnswerModel>> GetUserAnswersForQuestionAsync(Guid attemptId, Guid questionId)
     {
         var answers = await DbContext.UserAnswers
             .Where(ao => ao.AttemptId.Equals(attemptId) && ao.QuestionId.Equals(questionId))
             .ToListAsync();
 
-        return Mapper.Map<List<UserAnswerModel>>(answers);
+        return Mapper.Map<List<UserQuestionAnswerModel>>(answers);
     }
 
     public async Task<ExamAggregateModel> AddExamWithDetailsAsync(ExamAggregateModel model)
@@ -102,6 +102,7 @@ public class ExamRepository : RepositoryBase<ExamModel, ExamDao, ApplicationDbCo
         await DbContext.SaveChangesAsync();
     }
 
+    
     private ExamDao MapExamAggregateToDao(ExamAggregateModel model)
     {
         var examDao = Mapper.Map<ExamDao>(model.Exam);
@@ -146,5 +147,18 @@ public class ExamRepository : RepositoryBase<ExamModel, ExamDao, ApplicationDbCo
         }
 
         return examAggregate;
+    }
+    
+    public async Task<Guid?> GetCourseIdByExamIdAsync(Guid examId)
+    {
+        var courseId = await DbContext.Exams.Where(e => e.Id == examId).Select(e => e.CourseId).FirstOrDefaultAsync();
+
+        return courseId;
+    }
+    
+    public async Task<bool> IsExamAuthorAsync(Guid examId, Guid userId)
+    {
+        return await DbContext.Exams
+            .AnyAsync(c => c.Id == examId && c.AuthorId == userId);
     }
 }

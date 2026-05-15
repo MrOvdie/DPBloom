@@ -10,6 +10,7 @@ public class LectureDao : EntityDaoBase<Guid>, ISoftDelete
 {
     public string Title { get; set; }
     public string? Description { get; set; }
+    public string Content { get; set; }
     public Guid CourseId { get; set; }
     public Guid? TopicId { get; set; }
     public Guid AuthorId { get; set; }

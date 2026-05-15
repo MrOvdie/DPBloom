@@ -11,9 +11,14 @@ public interface IAttemptResultRepository : IRepository<AttemptResultModel>
     Task<AttemptResultModel> GetAttemptResultByExamIdAsync(Guid examId);
     Task<IReadOnlyList<AttemptResultModel>> GetAllAttemptsResultsByUserAsync(Guid userId);
     Task<IReadOnlyList<AttemptResultModel>> GetAllAttemptsResultsByExamAsync(Guid examId);
+    Task<bool> IsAttemptResultOwnerAsync(Guid attemptResultId, Guid userId);
+    Task<bool> IsExamAuthorByAttemptResultAsync(Guid attemptResultId, Guid userId);
+    Task<List<UserQuestionAnswerModel>> GetAllManualReviewsForAttemptAsync(Guid attemptId);
+    Task<List<AttemptResultModel>> GetAllManualReviewsAttemptsForExamAsync(Guid examId);
+    Task<AttemptAccessInfo?> GetAccessInfoAsync(Guid attemptResultId);
 
     //     Task<ExamAggregateModel> GetWithQuestionsAsync(Guid examId);
-    // Task<List<UserAnswerModel>> GetUserAnswersForQuestionAsync(Guid attemptId, Guid questionId);
+    // Task<List<UserQuestionAnswerModel>> GetUserAnswersForQuestionAsync(Guid attemptId, Guid questionId);
     // Task<ExamAggregateModel> AddExamWithDetailsAsync(ExamAggregateModel model);
     // Task<ExamAggregateModel> UpdateExamWithDetailsAsync(ExamAggregateModel model);
     // Task DeleteExamWithDetailsAsync(ExamAggregateModel model);
@@ -23,8 +28,8 @@ public interface IAttemptResultRepository : IRepository<AttemptResultModel>
     // Task<List<UserExamAttemptModel>> GetByUserAsync(Guid userId);
     //
     // Task<UserExamAttemptModel> StartAsync(UserExamAttemptModel model);
-    // Task SubmitAnswerAsync(Guid attemptId, UserAnswerModel answer);
-    // Task SaveAllAnswersAsync(Guid attemptId, List<UserAnswerModel> answers);
+    // Task SubmitAnswerAsync(Guid attemptId, UserQuestionAnswerModel answer);
+    // Task SaveAllAnswersAsync(Guid attemptId, List<UserQuestionAnswerModel> answers);
     // Task FinishAsync(UserExamAttemptModel model);
     // Task<QuestionResultModel> FindManuallyReviewedAnswer(Guid attemptId, Guid questionId);
 }

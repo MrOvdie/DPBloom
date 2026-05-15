@@ -2,7 +2,7 @@
 
 namespace DPBloom.Infrastructure.Exam;
 
-public class UserAnswerDao : EntityDaoBase<Guid>
+public class UserQuestionAnswerDao : EntityDaoBase<Guid>
 {
     public Guid AttemptId { get; set; }
     public Guid QuestionId { get; set; }

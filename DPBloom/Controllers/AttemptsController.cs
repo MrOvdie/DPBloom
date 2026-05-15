@@ -18,37 +18,27 @@ public class AttemptsController : ControllerBase
         _attemptService = attemptService;
     }
 
-    // Почати нову спробу проходження екзамену
-    [HttpPost("start/{examId:guid}")]
+    [HttpPost("{examId:guid}/start")]
+    [Authorize]
     public async Task<IActionResult> StartAttempt(Guid examId)
     {
-        var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!Guid.TryParse(userIdString, out var userId)) return Unauthorized();
-
-        // Сервіс фіксує старт і повертає ID спроби
-        var attemptId = await _attemptService.StartAsync(userId, examId);
+        var attemptId = await _attemptService.StartAsync(examId);
 
         return Ok(new { AttemptId = attemptId });
     }
 
-    // Відправити відповідь на конкретне запитання
     [HttpPost("{attemptId:guid}/submit")]
+    [Authorize]
     public async Task<IActionResult> SubmitAnswer(Guid attemptId, [FromBody] SubmitAnswerDto request)
     {
-        // Контролер витягує ID з токена (він це вміє і має право робити)
-        var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!Guid.TryParse(userIdString, out var userId)) return Unauthorized();
-
         try
         {
-            // Передаємо ID в сервіс
-            await _attemptService.SubmitAnswerAsync(userId, attemptId, request);
+            await _attemptService.SubmitAnswerAsync(attemptId, request);
             return Ok();
         }
         catch (UnauthorizedAccessException ex)
         {
-            // Перехоплюємо виняток від сервісу і перетворюємо його на правильний HTTP статус (403 Forbidden)
-            return Forbid(ex.Message); // або StatusCode(403, ex.Message)
+            return Forbid(ex.Message);
         }
         catch (KeyNotFoundException ex)
         {
@@ -56,27 +46,75 @@ public class AttemptsController : ControllerBase
         }
     }
 
-    // Завершити спробу та отримати підсумковий результат
+    [HttpPost("{attemptId:guid}/submit-all")]
+    [Authorize]
+    public async Task<IActionResult> SubmitAnswers(Guid attemptId, [FromBody] List<SubmitAnswerDto> request)
+    {
+        var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userIdString, out var userId)) return Unauthorized(); //TODO: check
+
+        try
+        {
+            await _attemptService.SaveAllAnswersAsync(attemptId, request);
+            return Ok();
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Forbid(ex.Message);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+    }
+
     [HttpPost("{attemptId:guid}/finish")]
+    [Authorize]
     public async Task<IActionResult> FinishAttempt(Guid attemptId)
     {
         var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (!Guid.TryParse(userIdString, out var userId)) return Unauthorized();
 
-        var result = await _attemptService.FinishAsync(userId, attemptId);
-        return Ok(result); // Повертає AttemptResultDto
+        var result = await _attemptService.FinishAsync(attemptId);
+        return Ok(result);
     }
 
-    // Отримати результати вже завершеної спроби (наприклад, для перегляду історії)
     [HttpGet("{attemptId:guid}/result")]
     public async Task<IActionResult> GetResult(Guid attemptId)
     {
-        var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!Guid.TryParse(userIdString, out var userId)) return Unauthorized();
-
-        var result = await _attemptService.GetResultAsync(userId, attemptId);
+        var result = await _attemptService.GetResultAsync(attemptId);
         if (result is null) return NotFound();
 
+        return Ok(result);
+    }
+
+    [HttpGet("{examId:guid}/exam-results")]
+    [Authorize(Policy = "RequireTeacherPrivileges")]
+    public async Task<IActionResult> GetAttemptResultsByExamAsync(Guid examId)
+    {
+        var result = await _attemptService.GetAttemptResultsByExamAsync(examId);
+        
+        return Ok(result);
+    }
+
+    [HttpPost("review/{attemptResultId:guid}")]
+    [Authorize]
+    public async Task<ActionResult<AttemptResultDto>> EvaluateManualAnswers(
+        Guid attemptResultId,
+        [FromBody] List<TeacherEvaluationDto> evaluations,
+        [FromQuery] Guid examId)
+    {
+        var result = await _attemptService.CheckOpenTextAnswerAsync(attemptResultId, evaluations, examId);
+        
+        return Ok(result);
+    }
+
+    [HttpGet("{examId:guid}/manual-evaluations")]
+    [Authorize(Policy = "RequireTeacherPrivileges")]
+    public async Task<IActionResult> GetManualEvaluations(Guid examId)
+    {
+        var result = await _attemptService.GetAttemptResultsForManualReviewByExamAsync(examId);
+        
         return Ok(result);
     }
 }

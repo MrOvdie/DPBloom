@@ -13,6 +13,7 @@ public class AttemptResultModel : EntityBase<Guid>
     public int CorrectAnswers { get; set; }
 
     public double Score { get; set; }
+    public double MaxScore { get; set; }
     public double ScorePercentage { get; set; }
 
     public bool Passed { get; set; }

@@ -1,7 +1,7 @@
-﻿using DPBloom.Infrastructure.Base;
-using DPBloom.Infrastructure.Exam;
+﻿using DPBloom.Core.Exam.Enums;
+using DPBloom.Infrastructure.Base;
 
-namespace DPBloom.Infrastructure.Data;
+namespace DPBloom.Infrastructure.Exam;
 
 public class QuestionResultDao : EntityDaoBase<Guid>
 {
@@ -10,8 +10,12 @@ public class QuestionResultDao : EntityDaoBase<Guid>
     public Guid QuestionId { get; set; }
     public string Text { get; set; }
     public double Score { get; set; }
+    public double MaxScore { get; set; }
     public bool IsCorrect { get; set; }
-
+    public string? Comment { get; set; }
+    
+    public AttemptStatus QuestionResultStatus { get; set; }
+    
     public IEnumerable<Guid>? SelectedOptionIds { get; set; }
     public string? FreeTextAnswer { get; set; }
 

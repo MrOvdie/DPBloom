@@ -1,4 +1,4 @@
-﻿namespace TestOfTesting.Models.Enums;
+﻿namespace DPBloom.Core.Exam.Enums;
 
 public enum CheckingType
 {

@@ -7,7 +7,6 @@ public enum AttemptStatus
     Expired,
     Draft,
     Checked,
-    NotValidated,
-    ExpiredChecked,
-    ExpiredNotValidated,
+    PendingReview,
+    PendingManualReview,
 }

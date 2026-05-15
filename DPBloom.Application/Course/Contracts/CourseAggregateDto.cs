@@ -1,5 +1,7 @@
 ﻿using DPBloom.Application.Exam;
+using DPBloom.Application.Exam.Contracts;
 using DPBloom.Application.Lecture;
+using DPBloom.Application.Lecture.Contracts;
 using DPBloom.Application.Topic;
 
 namespace DPBloom.Application.Course.Contracts;

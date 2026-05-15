@@ -1,9 +1,12 @@
 ﻿using AutoMapper;
+using DPBloom.Application.Auth;
+using DPBloom.Application.Enrollment;
 using DPBloom.Application.Exam.Contracts;
 using DPBloom.Core.Exam;
 using DPBloom.Core.Exam.Enums;
-using TestOfTesting.Models.Enums;
-using Type = TestOfTesting.Models.Enums.Type;
+using FluentValidation;
+using UUIDNext;
+using Type = DPBloom.Core.Exam.Enums.Type;
 
 namespace DPBloom.Application.Exam;
 
@@ -13,34 +16,47 @@ public class AttemptService : IAttemptService
     private readonly IAttemptResultRepository _attemptResultRepository;
     private readonly IExamRepository _examRepository;
     private readonly IExamService _examService;
+    private readonly ICurrentUserService _currentUserService;
+    private readonly IEnrollmentRepository _enrollmentRepository;
+    private readonly IValidator<SubmitAnswerDto> _submitAnswerValidator;
+    private readonly IValidator<TeacherEvaluationDto> _teacherEvaluationValidator;
     private readonly IMapper _mapper;
 
     public AttemptService(IAttemptRepository attemptRepository, IMapper mapper, IExamRepository examRepository,
-        IExamService examService, IAttemptResultRepository attemptResultRepository)
+        IExamService examService, IAttemptResultRepository attemptResultRepository,
+        ICurrentUserService currentUserService, IEnrollmentRepository enrollmentRepository,
+        IValidator<SubmitAnswerDto> submitAnswerValidator, IValidator<TeacherEvaluationDto> teacherEvaluationValidator)
     {
         _attemptResultRepository = attemptResultRepository;
+        _currentUserService = currentUserService;
+        _enrollmentRepository = enrollmentRepository;
+        _submitAnswerValidator = submitAnswerValidator;
+        _teacherEvaluationValidator = teacherEvaluationValidator;
         _attemptRepository = attemptRepository;
         _examRepository = examRepository;
         _examService = examService;
         _mapper = mapper;
     }
 
-    public async Task<Guid> StartAsync(Guid userId, Guid examId)
+    public async Task<Guid> StartAsync(Guid examId)
     {
-        //TODO: add checking, if user CAN start the test by applying on course
         var exam = await _examService.GetEntityByIdAsync(examId);
 
         if (exam.Exam.StartsAt > DateTime.UtcNow || exam.Exam.FinishesAt < DateTime.UtcNow)
             throw new InvalidOperationException("Exam is not available for start");
 
+        var userId = _currentUserService.GetUserId();
+        
+        await EnrollmentCheck(exam.Exam.CourseId, userId); //Check this
+
         var userAttempt = new UserExamAttemptModel
         {
-            Id = Guid.NewGuid(),
+            Id = Uuid.NewDatabaseFriendly(Database.SqlServer),
             UserId = userId,
             ExamId = examId,
+            CourseId = exam.Exam.CourseId,
             Status = AttemptStatus.InProgress,
             StartedAt = DateTime.UtcNow,
-            IsValid = true,
             CreatedOn = DateTime.UtcNow,
             UpdatedOn = DateTime.UtcNow,
         };
@@ -49,136 +65,131 @@ public class AttemptService : IAttemptService
         return startedModel.Id;
     }
 
-    public async Task SubmitAnswerAsync(Guid userId, Guid attemptId, SubmitAnswerDto answer)
+    public async Task SubmitAnswerAsync(Guid attemptId, SubmitAnswerDto answer)
     {
-        //TODO: add submit answer validator
+        var userId = _currentUserService.GetUserId();
+        
+        await ValidateAttemptAccessAndStatusAsync(userId, attemptId);
 
-        // var validation...
+        var validationResult = await _submitAnswerValidator.ValidateAsync(answer);
 
-        // 1. Отримуємо спробу з бази даних
-        // (У тебе в IAttemptRepository має бути метод для отримання спроби)
-        var attempt = await _attemptRepository.GetByIdAsync(attemptId);
+        if (!validationResult.IsValid)
+            throw new ValidationException(validationResult.Errors);
 
-        // 2. Перевіряємо, чи існує така спроба взагалі
-        if (attempt == null)
-        {
-            throw new KeyNotFoundException("Спробу не знайдено.");
-        }
+        var answerModel = _mapper.Map<UserQuestionAnswerModel>(answer);
+        answerModel.AttemptId = attemptId;
 
-        // 3. БІЗНЕС-ПЕРЕВІРКА ВЛАСНИКА (Authorization)
-        if (attempt.UserId != userId)
-        {
-            // Кидаємо виняток. Сервіс не знає про HTTP 403, він просто каже "Доступ заборонено"
-            throw new UnauthorizedAccessException("Ви не маєте доступу до цієї спроби.");
-        }
-
-        // 4. (Опціонально) Можна додати перевірку, чи спроба ще активна
-        // if (attempt.Status != AttemptStatus.InProgress)
-        //     throw new InvalidOperationException("Ця спроба вже завершена.");
-
-        // 5. Валідація DTO (FluentValidation)
-        // TODO: add submit answer validator
-
-        // 6. Мапінг і збереження
-        var answerModel = _mapper.Map<UserAnswerModel>(answer);
-        answerModel.Id = Guid.NewGuid();
-        answerModel.CreatedOn = answerModel.UpdatedOn = DateTime.UtcNow;
-        answerModel.SubmittedAt = DateTime.UtcNow;
-
-        // Зверни увагу: використовуємо attemptId з параметрів методу (маршруту), 
-        // а не з тіла запиту (answer.AttemptId), щоб уникнути підміни даних хакером.
         await _attemptRepository.SubmitAnswerAsync(attemptId, answerModel);
     }
 
     public async Task SaveAllAnswersAsync(Guid attemptId, List<SubmitAnswerDto> answers)
     {
-        //TODO: add submit answer validator
+        var userId = _currentUserService.GetUserId();
+        
+        await ValidateAttemptAccessAndStatusAsync(userId, attemptId);
 
-        // var validation...
+        var validationResults = await Task.WhenAll(answers.Select(a => _submitAnswerValidator.ValidateAsync(a)));
 
-        var answerModels = _mapper.Map<List<UserAnswerModel>>(answers);
+        if (!validationResults.All(r => r.IsValid))
+            throw new ValidationException(validationResults.SelectMany(r => r.Errors));
+
+        var answerModels = _mapper.Map<List<UserQuestionAnswerModel>>(answers);
 
         foreach (var answerModel in answerModels)
         {
-            answerModel.Id = Guid.NewGuid();
-            answerModel.CreatedOn = answerModel.UpdatedOn = DateTime.UtcNow;
-            answerModel.SubmittedAt = DateTime.UtcNow;
+            answerModel.AttemptId = attemptId;
         }
 
         await _attemptRepository.SaveAllAnswersAsync(attemptId, answerModels);
     }
 
-    public async Task<AttemptResultDto> FinishAsync(Guid userId, Guid attemptId)
+    public async Task<AttemptResultDto> FinishAsync(Guid attemptId)
     {
-        var attempt = await GetEntityByIdAsync(attemptId);
-
-        if (attempt is null)
-            throw new KeyNotFoundException("Спробу не знайдено.");
-
-        if (attempt.UserId != userId)
-            throw new UnauthorizedAccessException("Ви не маєте доступу до цієї спроби.");
-
-        var exam = await _examRepository.GetWithQuestionsAsync(attempt.ExamId);
+        var userId = _currentUserService.GetUserId();
+        
+        var attempt = await ValidateAttemptAccessAndStatusAsync(userId, attemptId);
 
         if (attempt.Status is AttemptStatus.Submitted or AttemptStatus.Expired)
         {
-            return await GetResultAsync(userId, attemptId);
-            ;
+            return await GetResultAsync(attemptId);
         }
+
+        if (attempt.Status is not AttemptStatus.InProgress)
+        {
+            throw new InvalidOperationException("This attempt cannot be finished.");
+        }
+
+        var exam = await _examRepository.GetWithQuestionsAsync(attempt.ExamId);
 
         attempt.FinishedAt = DateTime.UtcNow;
 
-        if (attempt.FinishedAt > exam.Exam.FinishesAt || attempt.FinishedAt - attempt.StartedAt > exam.Exam.Duration)
-            attempt.Status = AttemptStatus.Expired;
-        else
-            attempt.Status = AttemptStatus.Submitted;
+        var isTimeOver = attempt.FinishedAt > exam.Exam.FinishesAt.AddSeconds(10) ||
+                         attempt.FinishedAt - attempt.StartedAt > exam.Exam.Duration.Add(TimeSpan.FromSeconds(10));
+
+        attempt.Status = isTimeOver ? AttemptStatus.Expired : AttemptStatus.Submitted;
 
         await _attemptRepository.FinishAsync(attempt);
-
-        /*try
-        {
-            await CalculateAndSaveResultAsync(attempt, exam);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error during automatic result calculation for attempt {attemptId}: {ex.Message}");
-        }*/
 
         var resultModel = await CalculateAndSaveResultAsync(attempt, exam);
         return _mapper.Map<AttemptResultDto>(resultModel);
     }
 
-    public async Task<AttemptResultDto> GetResultAsync(Guid userId, Guid attemptId)
+    public async Task<AttemptResultDto> GetResultAsync(Guid attemptId)
     {
         var attempt = await GetEntityByIdAsync(attemptId);
 
         if (attempt is null)
-            throw new KeyNotFoundException("Спробу не знайдено.");
+            throw new KeyNotFoundException($"Can't find attempt with id {attemptId}.");
 
-        if (attempt.UserId != userId)
-            throw new UnauthorizedAccessException("Ви не маєте доступу до цієї спроби."); //TODO: maybe add validation?
+        if (attempt.Status is not AttemptStatus.Submitted and not AttemptStatus.Expired)
+            throw new InvalidOperationException("This attempt isn't finished.");
 
-        if (attempt.AttemptResultId.HasValue)
+        var attemptResultId = attempt.AttemptResultId;
+
+        if (attemptResultId is null)
         {
-            var savedResult = await _attemptResultRepository.GetByIdAsync(attempt.AttemptResultId.Value);
-            return _mapper.Map<AttemptResultDto>(savedResult);
+            var exam = await _examRepository.GetWithQuestionsAsync(attempt.ExamId);
+            var resultModel = await CalculateAndSaveResultAsync(attempt, exam);
+
+            return _mapper.Map<AttemptResultDto>(resultModel);
         }
 
-        var exam = await _examRepository.GetWithQuestionsAsync(attempt.ExamId);
-        var resultModel = await CalculateAndSaveResultAsync(attempt, exam);
-        return _mapper.Map<AttemptResultDto>(resultModel);
+        await EnsureUserHasAccessToAttemptResultAsync(attemptResultId.Value);
+
+        var savedResult = await _attemptResultRepository.GetByIdAsync(attemptResultId.Value);
+
+        return _mapper.Map<AttemptResultDto>(savedResult);
+    }
+    
+    public async Task<IReadOnlyList<AttemptResultRecordDto>> GetAttemptResultsByExamAsync(Guid examId)
+    {
+        var exam = await _examRepository.GetByIdAsync(examId);
+        if (exam is null)
+            throw new KeyNotFoundException($"Can't find exam with id {examId}.");
+        
+        var userId = _currentUserService.GetUserId();
+        var isAdmin = _currentUserService.IsAdmin();
+        
+        if (exam.AuthorId != userId && !isAdmin)
+            throw new UnauthorizedAccessException("You are not allowed to access this exam attempt results.");
+        
+        var attemptResults = await _attemptResultRepository
+            .GetAllAttemptsResultsByExamAsync(examId);
+
+        return _mapper.Map<IReadOnlyList<AttemptResultRecordDto>>(attemptResults);
     }
 
-    public async Task<UserExamAttemptModel> GetEntityByIdAsync(Guid id)
+
+    private async Task<UserExamAttemptModel> GetEntityByIdAsync(Guid id)
     {
         var examAttempt = await _attemptRepository.GetByIdAsync(id);
 
         if (examAttempt is null)
-            throw new KeyNotFoundException($"Lecture with ID {id} not found");
+            throw new KeyNotFoundException($"Exam attempt with ID {id} not found");
 
         return examAttempt;
     }
-
+    
     private async Task<AttemptResultModel> CalculateAndSaveResultAsync(UserExamAttemptModel attempt,
         ExamAggregateModel exam)
     {
@@ -187,22 +198,23 @@ public class AttemptService : IAttemptService
             return await _attemptResultRepository.GetByIdAsync(attempt.AttemptResultId.Value);
         }
 
-        var result = new AttemptResultDto
+        var result = new AttemptResultModel
         {
+            Id = Uuid.NewDatabaseFriendly(Database.SqlServer),
             AttemptId = attempt.Id,
             ExamId = exam.Exam.Id,
             CourseId = exam.Exam.CourseId,
             TotalQuestions = exam.Questions.Count,
-            Details = []
+            Details = [],
+            CreatedOn = DateTime.UtcNow,
+            UpdatedOn = DateTime.UtcNow,
         };
 
-        var correctAnswers = 0;
-        var totalPossibleScore = exam.Questions.Select(q => q.ScoreWeight).Sum();
-        var score = 0.0;
+        var allManualReviews = await _attemptResultRepository.GetAllManualReviewsForAttemptAsync(attempt.Id);
 
-        var tasks = exam.Questions.Select(async question =>
+        foreach (var question in exam.Questions)
         {
-            QuestionResultDto questionReview;
+            QuestionResultModel questionReview;
 
             if (question.CheckingType == CheckingType.Automatic)
             {
@@ -210,50 +222,44 @@ public class AttemptService : IAttemptService
             }
             else
             {
-                var manualReview = await _attemptRepository.FindManuallyReviewedAnswer(attempt.Id, question.Id);
-                if (manualReview is null)
-                    throw new InvalidOperationException("Cannot find manual review for this question");
+                var manualReview = allManualReviews.FirstOrDefault(r => r.QuestionId == question.Id);
 
-                questionReview = _mapper.Map<QuestionResultDto>(manualReview);
+                if (manualReview is null)
+                {
+                    questionReview = new QuestionResultModel
+                    {
+                        Id = Uuid.NewDatabaseFriendly(Database.SqlServer),
+                        QuestionId = question.Id,
+                        Text = question.Text,
+                        SelectedOptionIds = new List<Guid>(),
+                        CorrectOptionIds = new List<Guid>(),
+                        Score = 0,
+                        IsCorrect = false,
+                        QuestionResultStatus = AttemptStatus.PendingManualReview
+                    };
+                }
+                else
+                {
+                    questionReview = _mapper.Map<QuestionResultModel>(manualReview);
+                }
             }
 
-            return questionReview;
-        });
-
-        var questionReviews = await Task.WhenAll(tasks);
-
-        foreach (var r in questionReviews)
-        {
-            result.Details.Add(r);
-            score += r.Score;
-
-            if (r.IsCorrect)
-                correctAnswers++;
+            result.Details.Add(questionReview);
         }
 
-        result.Score = score;
-        result.CorrectAnswers = correctAnswers;
-        result.ScorePercentage = totalPossibleScore > 0
-            ? Math.Round((score / totalPossibleScore) * 100, 2)
-            : 0;
-        result.Passed = exam.Exam.MinimalPassScore is null
-                        || result.Score >= exam.Exam.MinimalPassScore.Value;
+        var (updatedResult, hasPending) = UpdateAttemptResultMetrics(result, exam);
 
-        var resultToSave = _mapper.Map<AttemptResultModel>(result);
+        await _attemptResultRepository.SaveAttemptResultAsync(attempt.Id, updatedResult);
 
-        await _attemptResultRepository.SaveAttemptResultAsync(attempt.Id, resultToSave);
-
-        attempt.AttemptResultId = resultToSave.Id;
-        attempt.Status =
-            AttemptStatus
-                .Checked; //TODO add checking status for unvalidated attempts (for example, if teacher had to check it manually)
+        attempt.AttemptResultId = updatedResult.Id;
+        attempt.Status = hasPending ? AttemptStatus.PendingManualReview : AttemptStatus.Checked;
 
         await _attemptRepository.UpdateAsync(attempt);
 
-        return resultToSave;
+        return updatedResult;
     }
 
-    private async Task<QuestionResultDto> CheckCorrectAnswersForQuestionAsync(Guid attemptId, Guid questionId,
+    private async Task<QuestionResultModel> CheckCorrectAnswersForQuestionAsync(Guid attemptId, Guid questionId,
         ExamAggregateModel exam)
     {
         var question = exam.Questions.SingleOrDefault(q => q.Id.Equals(questionId));
@@ -267,18 +273,18 @@ public class AttemptService : IAttemptService
             .Where(ao => ao.QuestionId.Equals(questionId) && ao.IsCorrect)
             .ToList();
 
-        var correctOptionIds = exam.AnswerOptions
-            .Where(ao => ao.QuestionId.Equals(questionId) && ao.IsCorrect)
-            .Select(ao => ao.Id)
-            .ToList();
+        var correctOptionIds = correctOptions.Select(ao => ao.Id).ToList();
 
-        var result = new QuestionResultDto
+        var result = new QuestionResultModel
         {
+            Id = Uuid.NewDatabaseFriendly(Database.SqlServer),
             QuestionId = questionId,
             Text = question.Text,
             SelectedOptionIds = selectedOptionIds,
             CorrectOptionIds = correctOptionIds,
-            Score = 0
+            Score = 0,
+            CreatedOn = DateTime.UtcNow,
+            UpdatedOn = DateTime.UtcNow,
         };
 
         switch (question.Type)
@@ -296,7 +302,7 @@ public class AttemptService : IAttemptService
                 var correctSelected = selectedOptionIds.Intersect(correctOptionIds).Count();
                 var incorrectSelected = selectedOptionIds.Except(correctOptionIds).Count();
 
-                var score = correctSelected * weightPerCorrect;
+                var score = Math.Max(0, (correctSelected - incorrectSelected) * weightPerCorrect);
 
                 var isFullyCorrect = correctSelected == correctCount && incorrectSelected == 0;
 
@@ -310,14 +316,183 @@ public class AttemptService : IAttemptService
                 break;
 
             case Type.OpenAnswer:
-                var correctText = correctOptions.Select(ao => ao.Text.ToLower()).ToList();
-                var userText = userAnswers.Select(ut => ut.FreeTextAnswer.ToLower()).ToList();
+                var userText = userAnswers.FirstOrDefault()?.FreeTextAnswer?.Trim();
 
-                result.IsCorrect = !correctText.Except(userText).Any() && !userText.Except(correctText).Any();
+                var isMatch = correctOptions.Any(ao => 
+                    string.Equals(ao.Text.Trim(), userText, StringComparison.OrdinalIgnoreCase));
+
+                result.IsCorrect = isMatch;
                 result.Score = result.IsCorrect ? question.ScoreWeight : 0;
                 break;
         }
 
         return result;
+    }
+
+    public async Task<AttemptResultDto> CheckOpenTextAnswerAsync(Guid attemptResultId,
+        IReadOnlyList<TeacherEvaluationDto> teacherEvaluations,
+        Guid examId)
+    {
+        var validationResults =
+            await Task.WhenAll(teacherEvaluations
+                .Select(a => _teacherEvaluationValidator.ValidateAsync(a)));
+
+        if (!validationResults.All(r => r.IsValid))
+            throw new ValidationException(validationResults.SelectMany(r => r.Errors));
+
+        var attemptResult = await _attemptResultRepository.GetByIdAsync(attemptResultId);
+        if (attemptResult is null)
+            throw new KeyNotFoundException($"Can't find attempt result with id {attemptResultId}.");
+
+        var exam = await _examRepository.GetWithQuestionsAsync(examId);
+        if (exam is null)
+            throw new KeyNotFoundException($"Can't find exam with id {examId}.");
+        
+        var user = _currentUserService.GetUserId();
+        
+        if (exam.Exam.AuthorId != user)
+            throw new UnauthorizedAccessException("You are not allowed to perform this action.");
+
+        foreach (var evaluation in teacherEvaluations)
+        {
+            var questionResult = attemptResult.Details.FirstOrDefault(q => q.QuestionId == evaluation.QuestionId);
+            if (questionResult is null)
+                throw new KeyNotFoundException(
+                    $"Can't find answer for question {evaluation.QuestionId} in this attempt result {attemptResultId}.");
+
+            var questionDefinition = exam.Questions.First(q => q.Id == evaluation.QuestionId);
+
+            var finalScore = Math.Min(evaluation.AwardedScore, questionDefinition.ScoreWeight);
+
+            questionResult.Score = finalScore;
+            questionResult.IsCorrect = finalScore > 0;
+            questionResult.QuestionResultStatus = AttemptStatus.Checked;
+        }
+
+        var (updatedResult, hasPending) = UpdateAttemptResultMetrics(attemptResult, exam);
+
+        await _attemptResultRepository.UpdateAsync(updatedResult);
+
+        if (!hasPending)
+        {
+            var attempt = await _attemptRepository.GetByIdAsync(updatedResult.AttemptId);
+            if (attempt is not null)
+            {
+                attempt.Status = AttemptStatus.Checked;
+                await _attemptRepository.UpdateAsync(attempt);
+            }
+        }
+
+        return _mapper.Map<AttemptResultDto>(updatedResult);
+    }
+
+    public async Task<IReadOnlyList<AttemptResultRecordDto>> GetAttemptResultsForManualReviewByExamAsync(Guid examId)
+    {
+        var exam = await _examRepository.GetByIdAsync(examId);
+        if (exam is null)
+            throw new KeyNotFoundException($"Can't find exam with id {examId}.");
+
+        var user = _currentUserService.GetUserId();
+        var isAdmin = _currentUserService.IsAdmin();
+        if (exam.AuthorId != user && !isAdmin)
+            throw new UnauthorizedAccessException("You are not allowed to access this exam.");
+
+        var manualAttemptResults = await _attemptResultRepository.GetAllManualReviewsAttemptsForExamAsync(exam.Id);
+
+        return _mapper.Map<List<AttemptResultRecordDto>>(manualAttemptResults);
+    }
+
+
+    private async Task EnsureUserHasAccessToAttemptResultAsync(Guid attemptResultId)
+    {
+        if (_currentUserService.IsAdmin())
+            return;
+
+        var currentUserId = _currentUserService.GetUserId();
+
+        var accessInfo = await _attemptResultRepository.GetAccessInfoAsync(attemptResultId);
+
+        if (accessInfo is null)
+            throw new KeyNotFoundException("Attempt result not found.");
+
+        if (accessInfo.StudentId != currentUserId && accessInfo.TeacherId != currentUserId)
+            throw new UnauthorizedAccessException("Only the student, the course author, or admins can view this result.");
+    }
+
+    private async Task EnrollmentCheck(Guid courseId, Guid userId)
+    {
+        var enrollmentCheck = await _enrollmentRepository.ExistsAsync(userId, courseId);
+
+        if (!enrollmentCheck)
+            throw new UnauthorizedAccessException("You are not enrolled in this course.");
+    }
+
+    private async Task<UserExamAttemptModel> ValidateAttemptAccessAndStatusAsync(Guid userId, Guid attemptId)
+    {
+        var attempt = await _attemptRepository.GetByIdAsync(attemptId);
+
+        if (attempt is null)
+            throw new KeyNotFoundException($"Can't find attempt with id {attemptId}.");
+
+        if (attempt.UserId != userId)
+            throw new UnauthorizedAccessException("You are not allowed to access this attempt.");
+
+        await EnrollmentCheck(attempt.CourseId, userId);
+
+        if (attempt.Status == AttemptStatus.InProgress)
+        {
+            var exam = await _examRepository.GetWithQuestionsAsync(attempt.ExamId);
+
+            if (exam is null)
+                throw new KeyNotFoundException("Exam not found.");
+
+            var now = DateTime.UtcNow;
+
+            var gracePeriod = TimeSpan.FromSeconds(10);
+
+            var isTimeOver = (now > exam.Exam.FinishesAt.Add(gracePeriod)) ||
+                             (now > attempt.StartedAt.Add(exam.Exam.Duration).Add(gracePeriod));
+
+            if (isTimeOver)
+            {
+                attempt.Status = AttemptStatus.Expired;
+                attempt.FinishedAt = now;
+                await _attemptRepository.UpdateAsync(attempt);
+
+                await CalculateAndSaveResultAsync(attempt, exam);
+
+                throw new InvalidOperationException("Time is over. Your attempt has been saved.");
+            }
+        }
+
+        if (attempt.Status is not AttemptStatus.InProgress)
+            throw new InvalidOperationException("This attempt has already been finished or expired.");
+
+        return attempt;
+    }
+
+    private (AttemptResultModel Result, bool HasPending) UpdateAttemptResultMetrics(
+        AttemptResultModel attemptResult,
+        ExamAggregateModel exam)
+    {
+        attemptResult.Score = attemptResult.Details.Sum(d => d.Score);
+        attemptResult.CorrectAnswers = attemptResult.Details.Count(d => d.IsCorrect);
+
+        var totalPossibleScore = exam.Questions.Sum(q => q.ScoreWeight);
+        attemptResult.ScorePercentage = totalPossibleScore > 0
+            ? Math.Round((attemptResult.Score / totalPossibleScore) * 100, 2)
+            : 0;
+
+        var hasPending = attemptResult.Details
+            .Any(d => exam.Questions.First(q => q.Id == d.QuestionId).CheckingType == CheckingType.Manual
+                      && d.QuestionResultStatus != AttemptStatus.Checked);
+
+        attemptResult.Passed = !hasPending &&
+                               (exam.Exam.MinimalPassScore is null ||
+                                attemptResult.Score >= exam.Exam.MinimalPassScore.Value);
+
+        attemptResult.UpdatedOn = DateTime.UtcNow;
+
+        return (attemptResult, hasPending);
     }
 }

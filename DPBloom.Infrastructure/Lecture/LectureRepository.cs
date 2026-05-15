@@ -29,4 +29,18 @@ public class LectureRepository : RepositoryBase<LectureModel, LectureDao, Applic
             .ToListAsync();
         return Mapper.Map<List<LectureModel>>(lecturesByTopic);
     }
+    
+    public async Task<Guid?> GetCourseIdByLectureIdAsync(Guid lectureId)
+    {
+        return await DbContext.Lectures
+            .Where(l => l.Id == lectureId)
+            .Select(l => l.CourseId)
+            .FirstOrDefaultAsync();
+    }
+    
+    public async Task<bool> IsLectureAuthorAsync(Guid lectureId, Guid userId)
+    {
+        return await DbContext.Lectures
+            .AnyAsync(c => c.Id == lectureId && c.AuthorId == userId);
+    }
 }

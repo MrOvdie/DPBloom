@@ -18,6 +18,7 @@ public class TopicController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> GetAll()
     {
         var topics = await _topicService.GetAllAsync();
@@ -25,12 +26,40 @@ public class TopicController : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
+    [Authorize]
     public async Task<IActionResult> GetById(Guid id)
     {
-        var topic = await _topicService.GetByIdAsync(id);
+        var topic = await _topicService.GetByIdWithAccessAsync(id);
         if (topic is null) return NotFound();
 
         return Ok(topic);
+    }
+    
+    [HttpGet("name/{topicName}")]
+    [Authorize]
+    public async Task<IActionResult> GetLectureByName(string topicName)
+    {
+        var lecture = await _topicService.GetTopicByNameAsync(topicName);
+        
+        return Ok(lecture);
+    }
+    
+    [HttpGet("course/{courseId:guid}")]
+    [Authorize]
+    public async Task<IActionResult> GetLectureByCourse(Guid courseId)
+    {
+        var lecture = await _topicService.GetTopicsByCourseAsync(courseId);
+        
+        return Ok(lecture);
+    }
+    
+    [HttpGet("author/{authorId:guid}")]
+    [Authorize]
+    public async Task<IActionResult> GetLectureByAuthor(Guid authorId)
+    {
+        var lecture = await _topicService.GetTopicsByAuthorAsync(authorId);
+        
+        return Ok(lecture);
     }
 
     [HttpPost("{courseId:guid}")]

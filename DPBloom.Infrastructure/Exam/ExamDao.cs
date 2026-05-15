@@ -26,6 +26,7 @@ public class ExamDao : EntityDaoBase<Guid>, ISoftDelete
     public ApplicationUser Author { get; set; }
     public CourseDao Course { get; set; }
     public TopicDao Topic { get; set; }
+    
     public bool IsDeleted { get; set; }
     public DateTime? DeletedOn { get; set; }
 }

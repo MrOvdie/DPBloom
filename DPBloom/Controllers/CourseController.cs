@@ -19,6 +19,7 @@ public class CourseController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> GetAll()
     {
         var courses = await _courseService.GetAllAsync();
@@ -26,12 +27,53 @@ public class CourseController : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
+    [Authorize]
     public async Task<IActionResult> GetById(Guid id)
     {
-        var course = await _courseService.GetByIdAsync(id);
+        var course = await _courseService.GetByIdWithAccessAsync(id); //TODO: check
         if (course is null) return NotFound();
 
         return Ok(course);
+    }
+
+    [HttpGet("content/{courseId:guid}")]
+    [Authorize]
+    public async Task<IActionResult> GetCourseContent(Guid courseId)
+    {
+        var course = await _courseService.GetCourseContentAsync(courseId);
+        if (course is null) return NotFound();
+        
+        return Ok(course);
+    }
+    
+    [HttpGet("name/{courseName}")]
+    [Authorize]
+    public async Task<IActionResult> GetCourseByName(string courseName)
+    {
+        var courses = await _courseService.GetCourseByNameAsync(courseName);
+        if (courses is null) return NotFound(); //TODO: maybe add checking of enrollment and so
+        
+        return Ok(courses);
+    }
+    
+    [HttpGet("author/{courseAuthorId:guid}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> GetCoursesByAuthor(Guid courseAuthorId)
+    {
+        var courses = await _courseService.GetCourseByAuthorAsync(courseAuthorId);
+        if (courses is null) return NotFound();
+        
+        return Ok(courses);
+    }
+
+    [HttpGet("enrolled")]
+    [Authorize]
+    public async Task<IActionResult> GetEnrolledCourses()
+    {
+        var courses = await _courseService.GetEnrolledCoursesAsync();
+        if (courses is null) return NotFound();
+        
+        return Ok(courses);
     }
 
     [HttpPost]
@@ -69,14 +111,14 @@ public class CourseController : ControllerBase
         return Ok(result);
     }
 
-    [HttpPost("courses/{courseId}/join")]
+    [HttpPost("{courseId}/enroll/{userId:guid}")]
     [Authorize(Policy = "RequireTeacherPrivileges")]
-    public async Task<IActionResult> EnrollStudent(Guid courseId, [FromBody] Guid studentId)
+    public async Task<IActionResult> EnrollStudent(Guid courseId, Guid userId)
     {
         try
         {
-            await _courseService.EnrollUserAsync(courseId, studentId);
-            return Ok("Студента успішно додано до курсу.");
+            await _courseService.EnrollUserAsync(courseId, userId);
+            return Ok("User successfully enrolled in the course.");
         }
         catch (KeyNotFoundException ex)
         {
@@ -88,7 +130,57 @@ public class CourseController : ControllerBase
         }
         catch (Exception)
         {
-            return StatusCode(500, "Сталася внутрішня помилка сервера.");
+            return StatusCode(500, "Internal server error.");
         }
+    }
+    
+    [HttpPost("dismiss/{enrollmentId:guid}")]
+    [Authorize(Policy = "RequireTeacherPrivileges")]
+    public async Task<IActionResult> DismissStudent(Guid enrollmentId)
+    {
+        try
+        {
+            await _courseService.DismissUserAsync(enrollmentId);
+            return Ok("User successfully dismissed from the course.");
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (Exception)
+        {
+            return StatusCode(500, "Internal server error.");
+        }
+    }
+
+    [HttpGet("statistics/{courseId:guid}/exams-progress/{userId:guid}")]
+    [Authorize]
+    public async Task<IActionResult> GetExamsProgressionPercent(Guid courseId, Guid userId)
+    {
+        var result = await _courseService.GetCourseExamsProgressPercentAsync(courseId, userId);
+        
+        return Ok(result);
+    }
+    
+    [HttpGet("statistics/{courseId:guid}/course-progress/{userId:guid}")]
+    [Authorize]
+    public async Task<IActionResult> GetCourseProgressionPercent(Guid courseId, Guid userId)
+    {
+        var result = await _courseService.GetCourseScoreProgressPercentAsync(courseId, userId);
+        
+        return Ok(result);
+    }
+    
+    [HttpGet("statistics/{courseId:guid}/course-score/{userId:guid}")]
+    [Authorize]
+    public async Task<IActionResult> GetCourseScore(Guid courseId, Guid userId)
+    {
+        var result = await _courseService.GetUserCourseScoreAsync(courseId, userId);
+        
+        return Ok(result);
     }
 }

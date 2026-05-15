@@ -1,8 +1,7 @@
 ﻿using AutoMapper;
 using DPBloom.Core.Exam;
 using DPBloom.Infrastructure.Data;
-using TestOfTesting.Models.Enums;
-using Type = TestOfTesting.Models.Enums.Type;
+using Type = DPBloom.Core.Exam.Enums.Type;
 
 namespace DPBloom.Infrastructure.Exam;
 
@@ -43,7 +42,7 @@ public class ExamDaoProfile : Profile
         CreateMap<UserExamAttemptDao, UserExamAttemptModel>()
             .ForMember(dest => dest.Status, opt => opt.MapFrom(src => (AttemptStatus)src.Status));
 
-        CreateMap<UserAnswerModel, UserAnswerDao>().ReverseMap();
+        CreateMap<UserQuestionAnswerModel, UserQuestionAnswerDao>().ReverseMap();
 
         CreateMap<QuestionModel, QuestionDao>()
             .ForMember(dest => dest.Type, opt => opt.MapFrom(src => (int)src.Type))

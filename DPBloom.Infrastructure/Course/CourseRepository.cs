@@ -22,4 +22,28 @@ public class CourseRepository : RepositoryBase<CourseModel, CourseDao, Applicati
             .ProjectTo<CourseAggregateDto>(Mapper.ConfigurationProvider)
             .FirstOrDefaultAsync();
     }
+    
+    public async Task<IReadOnlyList<CourseModel>> GetEnrolledCoursesByUserIdAsync(Guid userId)
+    {
+        var enrolledCourse = await DbContext.UserEnrollments
+            .Where(e => e.UserId == userId)
+            .Select(e => e.Course) 
+            .ToListAsync();
+        
+        return Mapper.Map<List<CourseModel>>(enrolledCourse);
+    }
+    
+    public async Task<bool> IsCourseAuthorAsync(Guid courseId, Guid userId)
+    {
+        return await DbContext.Courses
+            .AnyAsync(c => c.Id == courseId && c.AuthorId == userId);
+    }
+
+    public async Task<Guid> GetTeacherIdByCourseAsync(Guid courseId)
+    {
+        return await DbContext.Courses
+            .Where(c => c.Id == courseId)
+            .Select(c => c.AuthorId)
+            .FirstOrDefaultAsync();
+    }
 }

@@ -1,4 +1,5 @@
-﻿using DPBloom.Infrastructure.Base;
+﻿using DPBloom.Core.Exam.Enums;
+using DPBloom.Infrastructure.Base;
 using DPBloom.Infrastructure.Extensions;
 using DPBloom.Infrastructure.User;
 
@@ -9,7 +10,7 @@ public class UserExamAttemptDao : EntityDaoBase<Guid>, ISoftDelete
     public Guid ExamId { get; set; }
     public Guid? AttemptResultId { get; set; }
     public Guid UserId { get; set; }
-    public int Status { get; set; }
+    public AttemptStatus Status { get; set; }
     public double? TotalScore { get; set; }
     public DateTime StartedAt { get; set; }
     public DateTime FinishedAt { get; set; }
@@ -18,7 +19,7 @@ public class UserExamAttemptDao : EntityDaoBase<Guid>, ISoftDelete
     public DateTime? DeletedOn { get; set; }
     
     public ExamDao Exam { get; set; }
-    public ICollection<UserAnswerDao> Answers { get; set; }
+    public ICollection<UserQuestionAnswerDao> Answers { get; set; }
     public ApplicationUser User { get; set; }
     public AttemptResultDao? AttemptResult { get; set; }
 }

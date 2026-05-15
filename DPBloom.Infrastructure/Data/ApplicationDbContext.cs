@@ -1,4 +1,5 @@
-﻿using DPBloom.Infrastructure.Bloom;
+﻿using DPBloom.Core.Exam;
+using DPBloom.Infrastructure.Bloom;
 using DPBloom.Infrastructure.Course;
 using DPBloom.Infrastructure.Exam;
 using DPBloom.Infrastructure.Lecture;
@@ -22,7 +23,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
     public DbSet<UserEnrollmentDao> UserEnrollments { get; set; }
 
     public DbSet<UserExamAttemptDao> UserExamAttempts { get; set; }
-    public DbSet<UserAnswerDao> UserAnswers { get; set; }
+    public DbSet<UserQuestionAnswerDao> UserAnswers { get; set; }
     public DbSet<QuestionDao> Questions { get; set; }
     public DbSet<AnswerOptionDao> AnswerOptions { get; set; }
 
@@ -90,13 +91,13 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
             .OnDelete(DeleteBehavior.Restrict);
 
 
-        builder.Entity<UserAnswerDao>()
+        builder.Entity<UserQuestionAnswerDao>()
             .HasOne(ua => ua.Question)
             .WithMany()
             .HasForeignKey(ua => ua.QuestionId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.Entity<UserAnswerDao>()
+        builder.Entity<UserQuestionAnswerDao>()
             .HasOne(ua => ua.Attempt)
             .WithMany()
             .HasForeignKey(ua => ua.AttemptId)
@@ -143,5 +144,12 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
         builder.Entity<UserEnrollmentDao>()
             .HasIndex(e => new { e.UserId, e.CourseId })
             .IsUnique();
+        
+        
+        builder.Entity<AttemptResultDao>() 
+            .HasOne(ar => ar.Attempt)
+            .WithOne(a => a.AttemptResult) 
+            .HasForeignKey<AttemptResultDao>(ar => ar.AttemptId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

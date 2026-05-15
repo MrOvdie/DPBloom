@@ -21,15 +21,53 @@ public class LectureController : ControllerBase
     public async Task<IActionResult> GetAll()
     {
         var lectures = await _lectureService.GetAllAsync();
+       
         return Ok(lectures);
     }
 
     [HttpGet("{id:guid}")]
+    [Authorize]
     public async Task<IActionResult> GetById(Guid id)
     {
-        var lecture = await _lectureService.GetByIdAsync(id);
+        var lecture = await _lectureService.GetByIdWithAccessAsync(id);
         if (lecture is null) return NotFound();
 
+        return Ok(lecture);
+    }
+    
+    [HttpGet("name/{lectureName}")]
+    [Authorize]
+    public async Task<IActionResult> GetLectureByName(string lectureName)
+    {
+        var lecture = await _lectureService.GetLectureByNameAsync(lectureName);
+        
+        return Ok(lecture);
+    }
+    
+    [HttpGet("course/{courseId:guid}")]
+    [Authorize]
+    public async Task<IActionResult> GetLectureByCourse(Guid courseId)
+    {
+        var lecture = await _lectureService.GetLecturesByCourseAsync(courseId);
+        
+        return Ok(lecture);
+    }
+    
+    [HttpGet("topic/{topicId:guid}")]
+    [Authorize]
+    public async Task<IActionResult> GetLectureByTopic(Guid topicId)
+    {
+        var lecture = await _lectureService.GetLecturesByTopicAsync(topicId);
+        
+        return Ok(lecture);
+    }
+    
+    [HttpGet("author/{authorId:guid}")]
+    [Authorize]
+    public async Task<IActionResult> GetLectureByAuthor(Guid authorId)
+    {
+        var lecture = await _lectureService.GetLectureByAuthorAsync(authorId);
+        
         return Ok(lecture);
     }
 

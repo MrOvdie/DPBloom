@@ -1,7 +1,9 @@
 ﻿using AutoMapper;
 using DPBloom.Application.Course.Contracts;
 using DPBloom.Application.Exam;
+using DPBloom.Application.Exam.Contracts;
 using DPBloom.Application.Lecture;
+using DPBloom.Application.Lecture.Contracts;
 using DPBloom.Application.Topic;
 using DPBloom.Core.Course;
 using DPBloom.Infrastructure.Exam;

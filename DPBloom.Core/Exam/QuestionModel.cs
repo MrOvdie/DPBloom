@@ -1,7 +1,6 @@
 ﻿using DPBloom.Core.Base;
 using DPBloom.Core.Exam.Enums;
-using TestOfTesting.Models.Enums;
-using Type = TestOfTesting.Models.Enums.Type;
+using Type = DPBloom.Core.Exam.Enums.Type;
 
 namespace DPBloom.Core.Exam;
 

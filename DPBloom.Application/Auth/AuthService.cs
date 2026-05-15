@@ -4,6 +4,7 @@ using DPBloom.Application.Auth.Contracts;
 using DPBloom.Application.User;
 using DPBloom.Core.User;
 using FluentValidation;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.JsonWebTokens;
 
 namespace DPBloom.Application.Auth;
@@ -11,17 +12,19 @@ namespace DPBloom.Application.Auth;
 public class AuthService : IAuthService
 {
     private readonly IJwtTokenGenerator _jwtTokenGenerator;
+    private readonly IPasswordHasher<UserModel> _passwordHasher; 
     private readonly IMapper _mapper;
     private readonly IValidator<RegisterUserDto> _registerValidator;
     private readonly IUserRepository _userRepository;
 
     public AuthService(IUserRepository userRepository, IJwtTokenGenerator jwtTokenGenerator, IMapper mapper,
-        IValidator<RegisterUserDto> registerValidator)
+        IValidator<RegisterUserDto> registerValidator, IPasswordHasher<UserModel> passwordHasher)
     {
         _userRepository = userRepository;
         _jwtTokenGenerator = jwtTokenGenerator;
         _mapper = mapper;
         _registerValidator = registerValidator;
+        _passwordHasher = passwordHasher;
     }
 
     public async Task<bool> RegisterAsync(RegisterUserDto user)
@@ -42,16 +45,33 @@ public class AuthService : IAuthService
             "Student");
     }
 
-    public async Task<AuthResponseDto> LoginAsync(LoginRequestDto request) //TODO: REWORK THIS CRAP
+    public async Task<AuthResponseDto> LoginAsync(LoginRequestDto request)
     {
         var userModel = await _userRepository.ValidateUserAsync(request.LoginDetails, request.Password);
 
         if (userModel is null)
             throw new UnauthorizedAccessException("Invalid email or password.");
 
+        var token = _jwtTokenGenerator.GenerateToken(userModel); //TODO: CAN BE PROBLEM HERE -> uncomment old code
+
+        var response = new AuthResponseDto
+        { 
+            Token = token, 
+            FullName = userModel.GetFullName(), 
+            AvatarUrl = userModel.AvatarUrl 
+        };
+
+        return response;
+        
+        /*var userModel = await _userRepository.ValidateUserAsync(request.LoginDetails, request.Password);
+
+        if (userModel is null)
+            throw new UnauthorizedAccessException("Invalid email or password.");
+
         var claims = new List<Claim>
         {
-            new Claim(ClaimTypes.Name, userModel.Email),
+            new Claim(ClaimTypes.Name, userModel.UserName),
+            new Claim(ClaimTypes.Email, userModel.Email),
             new Claim(ClaimTypes.NameIdentifier, userModel.Id.ToString()),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
@@ -64,36 +84,39 @@ public class AuthService : IAuthService
         var token = _jwtTokenGenerator.GenerateToken(userModel, claims);
 
         return new AuthResponseDto
-            { Token = token, FullName = userModel.GetFullName(), AvatarUrl = userModel.AvatarUrl };
-
-        /*var userModel = await _userRepository.ValidateUserAsync(request.LoginDetails, request.Password);
-
-        if (userModel is null)
-            throw new UnauthorizedAccessException("Invalid email or password.");
-
-        await _userRepository.UpdateUserAsync(userModel);
-
-        // 1. Створюємо базові клейми
-        var claims = new List<Claim>
-        {
-            new Claim(ClaimTypes.Name, userModel.Email),
-            new Claim(ClaimTypes.NameIdentifier, userModel.Id.ToString())
-        };
-
-        // 2. ДОДАЄМО РОЛІ (перебираємо саме Roles з моделі)
-        if (userModel.Roles is not null)
-        {
-            foreach (var roleName in userModel.Roles)
-            {
-                // Переконайся, що додаєш саме значення рядка (Admin, Student тощо)
-                claims.Add(new Claim(ClaimTypes.Role, roleName));
-            }
-        }
-
-        var token = _jwtTokenGenerator.GenerateToken(userModel, claims);
-
-        return new AuthResponseDto
             { Token = token, FullName = userModel.GetFullName(), AvatarUrl = userModel.AvatarUrl };*/
+    }
+    
+    public async Task<UserProfileDto> UpdateUserProfileAsync(Guid userId, UpdateUserProfileDto dto)
+    {
+        var user = await _userRepository.GetUserByIdAsync(userId);
+    
+        if (user is null)
+            throw new KeyNotFoundException($"Can't find user {userId}.");
+        
+        var updatedUser = _mapper.Map<UserModel>(dto);
+        
+        await _userRepository.UpdateUserAsync(updatedUser);
+
+        return _mapper.Map<UserProfileDto>(updatedUser);
+    }
+    
+    public async Task ChangeUserPasswordAsync(Guid userId, ChangePasswordDto dto)
+    {
+        var user = await _userRepository.GetUserByIdAsync(userId);
+
+        if (user is null)
+            throw new KeyNotFoundException($"Can't find user {userId}.");
+
+        var verificationResult = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, dto.CurrentPassword);
+
+        if (verificationResult == PasswordVerificationResult.Failed)
+            throw new UnauthorizedAccessException("Current password is incorrect.");
+
+        user.PasswordHash = _passwordHasher.HashPassword(user, dto.NewPassword);
+        user.UpdatedOn = DateTime.UtcNow;
+
+        await _userRepository.UpdateUserAsync(user);
     }
 
     public async Task<UserProfileDto?> GetUserProfileAsync(Guid userId)

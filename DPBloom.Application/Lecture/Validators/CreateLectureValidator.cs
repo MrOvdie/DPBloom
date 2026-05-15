@@ -17,6 +17,10 @@ public class CreateLectureValidator : AbstractValidator<CreateLecture>
         RuleFor(cl => cl.Description)
             .Must(d => string.IsNullOrEmpty(d) || d.Length >= 3)
             .WithMessage("Description must be at least 3 characters long.");
+        
+        RuleFor(cl => cl.Content)
+            .NotEmpty().WithMessage("Content is required.")
+            .MaximumLength(30000).WithMessage("Content must be at most 30000 characters long.");
 
         RuleForEach(cl => cl.ContentLinks)
             .Must(link => string.IsNullOrEmpty(link) || Uri.IsWellFormedUriString(link, UriKind.Absolute))
