@@ -22,12 +22,30 @@ public class RepositoryBase<TModel, TDao, TContext> : IRepository<TModel>
         Mapper = mapper;
     }
 
-    public async Task<IReadOnlyList<TModel>> GetAllAsync()
+    public async Task<IReadOnlyList<TModel>> GetAllAsync(int pageNumber, int pageSize)
     {
+        /*var entitiesDao = DbContext.Set<TDao>();
+        
+        var totalCount = await entitiesDao.CountAsync();
+        
+        var items = await entitiesDao
+            .OrderByDescending(ar => ar.CreatedOn)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .Select(ar => Mapper.Map<TModel>(ar))
+            .ToListAsync();
+
+        return new Application.Base.PagedResult<TModel>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        };*/
         var entitiesDao = await DbContext.Set<TDao>().ToListAsync();
-        
+
         var entities = Mapper.Map<List<TModel>>(entitiesDao);
-        
+
         return entities;
     }
     

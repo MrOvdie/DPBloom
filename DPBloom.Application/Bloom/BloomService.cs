@@ -4,13 +4,16 @@ using DPBloom.Application.Exam;
 using DPBloom.Application.Lecture;
 using DPBloom.Core.Bloom;
 using DPBloom.Core.Exam;
+using DPBloom.Core.Exam.Enums;
 using DPBloom.Core.Lecture;
+using UUIDNext;
 
 namespace DPBloom.Application.Bloom;
 
 public class BloomService : IBloomService
 {
     private readonly IBloomRepository _bloomRepository;
+    private readonly IRecommendationRepository _recommendationRepository;
     private readonly IAttemptResultRepository _attemptResultRepository;
     private readonly IExamRepository _examRepository;
     private readonly ILectureRepository _lectureRepository;
@@ -23,91 +26,115 @@ public class BloomService : IBloomService
         IAttemptResultRepository attemptResultRepository,
         IExamRepository examRepository,
         ILectureRepository lectureRepository,
-        IMapper mapper)
+        IMapper mapper, IRecommendationRepository recommendationRepository)
     {
         _bloomRepository = bloomRepository;
         _attemptResultRepository = attemptResultRepository;
         _examRepository = examRepository;
         _lectureRepository = lectureRepository;
         _mapper = mapper;
+        _recommendationRepository = recommendationRepository;
     }
 
     public async Task<BloomAnalysisDto> AnalyzeAndSaveAttemptAsync(Guid attemptResultId)
-    {
-        var attemptResult = await _attemptResultRepository.GetAttemptResultByIdAsync(attemptResultId);
-        if (attemptResult == null)
-            throw new KeyNotFoundException("Attempt result not found.");
+{
+    var attemptResult = await _attemptResultRepository.GetAttemptResultByIdAsync(attemptResultId);
+    if (attemptResult == null)
+        throw new KeyNotFoundException("Attempt result not found.");
 
-        var examAggregate = await _examRepository.GetWithQuestionsAsync(attemptResult.ExamId);
-        if (examAggregate == null)
-            throw new KeyNotFoundException("Exam not found.");
+    var examAggregate = await _examRepository.GetWithQuestionsAsync(attemptResult.ExamId);
+    if (examAggregate == null)
+        throw new KeyNotFoundException("Exam not found.");
 
-        var questionsDict = examAggregate.Questions.ToDictionary(q => q.Id, q => q);
+    var questionsDict = examAggregate.Questions.ToDictionary(q => q.Id, q => q);
 
-        var groupedResults = attemptResult.Details
-            .Where(d => questionsDict.ContainsKey(d.QuestionId))
-            .GroupBy(d => questionsDict[d.QuestionId].Level);
+    var actualResultsDict = attemptResult.Details
+        .Where(d => questionsDict.ContainsKey(d.QuestionId))
+        .GroupBy(d => questionsDict[d.QuestionId].Level)
+        .Select(group => 
+        {
+            var maxPossibleScore = group.Sum(d => questionsDict[d.QuestionId].ScoreWeight);
+            var userScore = group.Sum(d => d.Score);
+            
+            var scorePercentage = maxPossibleScore > 0 ? (userScore / maxPossibleScore) * 100 : 0;
 
-        var levelPerformanceList = (from @group in groupedResults
-            let level = @group.Key
-            let maxPossibleScore = @group.Sum(d => questionsDict[d.QuestionId].ScoreWeight)
-            let userScore = @group.Sum(d => d.Score)
-            let scorePercentage = maxPossibleScore > 0 ? (maxPossibleScore / userScore) * 100 : 0
-
-            select new BloomLevelPerformance
+            return new BloomLevelPerformance
             {
-                Level = level,
-                TotalQuestions = @group.Count(),
-                CorrectAnswers = @group.Count(d => d.IsCorrect),
+                Level = group.Key,
+                TotalQuestions = group.Count(),
+                CorrectAnswers = group.Count(d => d.IsCorrect),
                 ScorePercentage = scorePercentage,
                 IsWeakPoint = scorePercentage < ContinueThreshold
-            }).ToList();
+            };
+        }).ToDictionary(x => x.Level, x => x);
 
-        var weakLevels = levelPerformanceList
-            .Where(pl => pl.IsWeakPoint)
-            .Select(pl => pl.Level).ToList(); //TODO: prepare for adding topics to tests for recommendations
-
-        var recommendations = new List<RecommendedMaterial>();
-
-        if (weakLevels.Count != 0)
+    var levelPerformanceList = Enum.GetValues<BloomLevel>().Select(level =>
+    {
+        if (actualResultsDict.TryGetValue(level, out var performance))
         {
-            foreach (var weakLevel in weakLevels)
-            {
-                IReadOnlyList<LectureModel> recommendedLectures = [];
-
-                if (examAggregate.Exam.TopicId is not null)
-                {
-                    var topic = examAggregate.Exam.TopicId.Value;
-                    recommendedLectures = await _lectureRepository.GetByTopicAsync(topic);
-                    //TODO: add bloom's category to lecture model
-                }
-
-                recommendations.AddRange(recommendedLectures
-                    .Select(lecture => new RecommendedMaterial
-                    {
-                        MaterialId = lecture.Id,
-                        Title = lecture.Title,
-                        RelevantBloomLevel = weakLevel
-                    }));
-            }
+            return performance;
         }
 
-        var bloomAnalysis = new BloomAnalysisModel
-            {
-                Id = Guid.NewGuid(),
-                AttemptResultId = attemptResultId,
-                UserId = Guid.Empty, //TODO: add user id to attempt result after competing it
-                PerformanceByLevel = levelPerformanceList,
-                Recommendations = recommendations,
-                OverallFeedback = ""/*GenerateFeedback(levelPerformanceList)*/, //TODO: maybe add feedback from teacher or automated one
-                CreatedOn = DateTime.UtcNow,
-                UpdatedOn = DateTime.UtcNow
-            };
-        
-            var savedAnalysis = await _bloomRepository.AddAnalysisAsync(bloomAnalysis);
+        return new BloomLevelPerformance
+        {
+            Level = level,
+            TotalQuestions = 0,
+            CorrectAnswers = 0,
+            ScorePercentage = 0,
+            IsWeakPoint = false
+        };
+    }).ToList();
 
-            return _mapper.Map<BloomAnalysisDto>(savedAnalysis);
+    var weakLevels = levelPerformanceList
+        .Where(pl => pl.IsWeakPoint)
+        .Select(pl => pl.Level)
+        .ToList();
+
+    var recommendations = new List<RecommendedMaterial>();
+
+    if (weakLevels.Count != 0)
+    {
+        var textTemplates = await _recommendationRepository.GetTemplatesByLevelsAsync(weakLevels);
+    
+        IReadOnlyList<LectureModel> lectures = new List<LectureModel>();
+        if (examAggregate.Exam.TopicId.HasValue)
+        {
+            lectures = await _lectureRepository.GetByTopicAsync(examAggregate.Exam.TopicId.Value);
+        }
+
+        foreach (var weakLevel in weakLevels)
+        {
+            var template = textTemplates.FirstOrDefault(t => t.TargetLevel == weakLevel);
+            var adviceText = template != null ? template.AdviceText : "Recommended to read more about this topic.";
+
+            var matchedLecture = lectures.FirstOrDefault(l => l.TargetBloomLevel == weakLevel);
+
+            recommendations.Add(new RecommendedMaterial
+            {
+                RelevantBloomLevel = weakLevel,
+                AdviceText = adviceText,
+                MaterialId = matchedLecture?.Id,
+                Title = matchedLecture?.Title 
+            });
+        }
     }
+
+    var bloomAnalysis = new BloomAnalysisModel
+    {
+        Id = Uuid.NewDatabaseFriendly(Database.SqlServer),
+        AttemptResultId = attemptResultId,
+        UserId = attemptResult.UserId,
+        PerformanceByLevel = levelPerformanceList,
+        Recommendations = recommendations,
+        OverallFeedback = "", 
+        CreatedOn = DateTime.UtcNow,
+        UpdatedOn = DateTime.UtcNow
+    };
+    
+    var savedAnalysis = await _bloomRepository.AddAnalysisAsync(bloomAnalysis);
+
+    return _mapper.Map<BloomAnalysisDto>(savedAnalysis);
+}
     
     public async Task<BloomAnalysisDto?> GetAnalysisByAttemptResultIdAsync(Guid attemptResultId)
     {
@@ -162,15 +189,15 @@ public class BloomService : IBloomService
     public async Task<UserBloomProfileDto> GetUserOverallProfileAsync(Guid userId)
     {
         var userAttemptsResults = await _attemptResultRepository.GetAllAttemptsResultsByUserAsync(userId);
-        
+
         if (!userAttemptsResults.Any())
         {
             return new UserBloomProfileDto { UserId = userId, TotalExamsAttempts = 0 };
         }
 
         var examIds = userAttemptsResults.Select(a => a.ExamId).Distinct().ToList();
-        var exams = new List<ExamAggregateModel>(); //TODO: mb change for more relevant exam model
-        
+        var exams = new List<ExamAggregateModel>();
+
         foreach (var id in examIds)
         {
             var exam = await _examRepository.GetWithQuestionsAsync(id);
@@ -182,21 +209,37 @@ public class BloomService : IBloomService
 
         var questionDict = exams.SelectMany(e => e.Questions).ToDictionary(q => q.Id, q => q);
 
-        var globalPerformance = userAttemptsResults
+        var actualPerformanceDict = userAttemptsResults
             .SelectMany(a => a.Details)
             .Where(d => questionDict.ContainsKey(d.QuestionId))
             .GroupBy(d => questionDict[d.QuestionId].Level)
-            .Select(group => 
+            .Select(group =>
             {
                 var maxPossibleScore = group.Sum(d => questionDict[d.QuestionId].ScoreWeight);
                 var userScore = group.Sum(d => d.Score);
-                
+
                 return new BloomLevelPerformanceDto
                 {
                     Level = group.Key,
-                    ScorePercentage = maxPossibleScore > 0 ? Math.Round((userScore / maxPossibleScore) * 100, 2) : 0,
+                    ScorePercentage = maxPossibleScore > 0
+                        ? Math.Round(((double)userScore / maxPossibleScore) * 100, 2)
+                        : 0
                 };
-            }).ToList();
+            }).ToDictionary(p => p.Level, p => p);
+
+        var globalPerformance = Enum.GetValues<BloomLevel>().Select(level => 
+        {
+            if (actualPerformanceDict.TryGetValue(level, out var existingPerformance))
+            {
+                return existingPerformance;
+            }
+
+            return new BloomLevelPerformanceDto
+            {
+                Level = level,
+                ScorePercentage = 0
+            };
+        }).ToList();
 
         return new UserBloomProfileDto
         {
@@ -249,4 +292,6 @@ public class BloomService : IBloomService
 
         };
     }
+
+    
 }

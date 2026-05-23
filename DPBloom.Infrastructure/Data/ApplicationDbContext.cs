@@ -34,6 +34,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
     public DbSet<BloomAnalysisDao> BloomAnalyses { get; set; }
     public DbSet<BloomLevelPerformanceDao> BloomLevelPerformances { get; set; }
     public DbSet<RecommendedMaterialDao> RecommendedMaterials { get; set; }
+    public DbSet<RecommendationTemplateDao> RecommendationTemplates { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

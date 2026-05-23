@@ -4,7 +4,7 @@ namespace DPBloom.Application.Bloom.Contracts;
 
 public class BloomLevelPerformanceDto
 {
-    public BloomLevel Level { get; set; } // "Knowing", "Applying" //TODO: maybe use int values, as everywhere, or simply enum
+    public BloomLevel Level { get; set; } // "Knowing", "Applying"
     public double ScorePercentage { get; set; }
     public bool IsWeakPoint { get; set; }
 }

@@ -1,7 +1,5 @@
 ﻿using AutoMapper;
 using DPBloom.Core.Exam;
-using DPBloom.Infrastructure.Data;
-using Type = DPBloom.Core.Exam.Enums.Type;
 
 namespace DPBloom.Infrastructure.Exam;
 

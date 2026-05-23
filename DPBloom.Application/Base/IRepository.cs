@@ -5,7 +5,7 @@ namespace DPBloom.Application.Base;
 
 public interface IRepository<TModel> where TModel : EntityBase<Guid>
 {
-    Task<IReadOnlyList<TModel>> GetAllAsync();
+    Task<IReadOnlyList<TModel>> GetAllAsync(int pageNumber = 1, int pageSize = 10); //TODO: pagination
     Task<IReadOnlyList<TModel>> GetAsync(Expression<Func<TModel, bool>> predicate);
     Task<TModel> GetByIdAsync(Guid id);
     Task<TModel> AddAsync(TModel entity);

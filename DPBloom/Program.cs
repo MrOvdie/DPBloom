@@ -47,7 +47,7 @@ builder.Services.AddMediatR(cfg => { cfg.RegisterServicesFromAssembly(typeof(Cou
 
 // 1. Налаштування бази даних
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DesktopConnection"))); //"LaptopConnection"
+    options.UseSqlServer(builder.Configuration.GetConnectionString("LaptopConnection"))); //"LaptopConnection", "DesktopConnection"
 
 // 2. Налаштування Identity (Без стандартних API ендпоінтів)
 builder.Services.AddIdentityCore<ApplicationUser>(options =>
@@ -69,9 +69,9 @@ builder.Services.AddAutoMapper(config =>
     config.AddExpressionMapping();
     config.AddProfiles(new List<Profile>
     {
-        new LectureDaoProfile(), new CourseDaoProfile(), new TopicDaoProfile(), new ExamDaoProfile(), new UserProfile(),
+        new LectureDaoProfile(), new CourseDaoProfile(), new TopicDaoProfile(), new ExamDaoProfile(), new UserProfile(), new BloomDaoProfile(),
         new EnrollmentDaoProfile(),
-        new LectureDtoProfile(), new TopicDtoProfile(), new CourseDtoProfile(), new ExamDtoProfile(),
+        new LectureDtoProfile(), new TopicDtoProfile(), new CourseDtoProfile(), new ExamDtoProfile(), new BloomDtoProfile(),
         new UserDtoProfile()
     });
 });
@@ -93,6 +93,7 @@ builder.Services.AddScoped<IAttemptRepository, AttemptRepository>();
 builder.Services.AddScoped<IAttemptResultRepository, AttemptResultRepository>();
 builder.Services.AddScoped<IBloomRepository, BloomRepository>();
 builder.Services.AddScoped<IEnrollmentRepository, EnrollmentRepository>();
+builder.Services.AddScoped<IRecommendationRepository, RecommendationRepository>();
 
 // 6. Реєстрація бізнес-сервісів
 builder.Services.AddScoped<IAuthService, AuthService>();
