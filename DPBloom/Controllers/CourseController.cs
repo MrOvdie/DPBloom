@@ -20,7 +20,7 @@ public class CourseController : ControllerBase
 
     [HttpGet]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> GetAll()
+    public async Task<ActionResult<IReadOnlyList<CourseDto>>> GetAll()
     {
         var courses = await _courseService.GetAllAsync();
         return Ok(courses);
@@ -28,7 +28,7 @@ public class CourseController : ControllerBase
 
     [HttpGet("{id:guid}")]
     [Authorize]
-    public async Task<IActionResult> GetById(Guid id)
+    public async Task<ActionResult<CourseDto>> GetById(Guid id)
     {
         var course = await _courseService.GetByIdWithAccessAsync(id); //TODO: check
         if (course is null) return NotFound();
@@ -38,7 +38,7 @@ public class CourseController : ControllerBase
 
     [HttpGet("content/{courseId:guid}")]
     [Authorize]
-    public async Task<IActionResult> GetCourseContent(Guid courseId)
+    public async Task<ActionResult<CourseAggregateDto>> GetCourseContent(Guid courseId)
     {
         var course = await _courseService.GetCourseContentAsync(courseId);
         if (course is null) return NotFound();
@@ -48,7 +48,7 @@ public class CourseController : ControllerBase
     
     [HttpGet("name/{courseName}")]
     [Authorize]
-    public async Task<IActionResult> GetCourseByName(string courseName)
+    public async Task<ActionResult<IReadOnlyList<CourseDto>>> GetCourseByName(string courseName)
     {
         var courses = await _courseService.GetCourseByNameAsync(courseName);
         if (courses is null) return NotFound(); //TODO: maybe add checking of enrollment and so
@@ -58,7 +58,7 @@ public class CourseController : ControllerBase
     
     [HttpGet("author/{courseAuthorId:guid}")]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> GetCoursesByAuthor(Guid courseAuthorId)
+    public async Task<ActionResult<IReadOnlyList<CourseDto>>> GetCoursesByAuthor(Guid courseAuthorId)
     {
         var courses = await _courseService.GetCourseByAuthorAsync(courseAuthorId);
         if (courses is null) return NotFound();
@@ -68,7 +68,7 @@ public class CourseController : ControllerBase
 
     [HttpGet("enrolled")]
     [Authorize]
-    public async Task<IActionResult> GetEnrolledCourses()
+    public async Task<ActionResult<IReadOnlyList<CourseDto>>> GetEnrolledCourses()
     {
         var courses = await _courseService.GetEnrolledCoursesAsync();
         if (courses is null) return NotFound();
@@ -78,15 +78,16 @@ public class CourseController : ControllerBase
 
     [HttpPost]
     [Authorize(Policy = "RequireTeacherPrivileges")]
-    public async Task<IActionResult> Create([FromBody] CreateCourse request)
+    public async Task<ActionResult<CourseDto>> Create([FromBody] CreateCourse request)
     {
         var courseDto = await _courseService.CreateCurseAsync(request);
+        
         return CreatedAtAction(nameof(GetById), new { id = courseDto.Id }, courseDto);
     }
 
     [HttpPut("{id:guid}")]
     [Authorize(Policy = "RequireTeacherPrivileges")]
-    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateCourse request)
+    public async Task<ActionResult<CourseDto>> Update(Guid id, [FromBody] UpdateCourse request)
     {
         var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
         var authorId = Guid.Parse(userIdString);
@@ -97,17 +98,19 @@ public class CourseController : ControllerBase
 
     [HttpDelete("{id:guid}")]
     [Authorize(Policy = "RequireTeacherPrivileges")]
-    public async Task<IActionResult> Delete(Guid id)
+    public async Task<ActionResult<CourseDto>> Delete(Guid id)
     {
         var result = await _courseService.DeleteAsync(id);
+        
         return Ok(result);
     }
 
     [HttpPatch("{id:guid}/restore")]
     [Authorize(Policy = "RequireTeacherPrivileges")]
-    public async Task<IActionResult> Restore(Guid id)
+    public async Task<ActionResult<CourseDto>> Restore(Guid id)
     {
         var result = await _courseService.RestoreAsync(id);
+       
         return Ok(result);
     }
 
@@ -159,7 +162,7 @@ public class CourseController : ControllerBase
 
     [HttpGet("statistics/{courseId:guid}/exams-progress/{userId:guid}")]
     [Authorize]
-    public async Task<IActionResult> GetExamsProgressionPercent(Guid courseId, Guid userId)
+    public async Task<ActionResult<double>> GetExamsProgressionPercent(Guid courseId, Guid userId)
     {
         var result = await _courseService.GetCourseExamsProgressPercentAsync(courseId, userId);
         
@@ -168,7 +171,7 @@ public class CourseController : ControllerBase
     
     [HttpGet("statistics/{courseId:guid}/course-progress/{userId:guid}")]
     [Authorize]
-    public async Task<IActionResult> GetCourseProgressionPercent(Guid courseId, Guid userId)
+    public async Task<ActionResult<double>> GetCourseProgressionPercent(Guid courseId, Guid userId)
     {
         var result = await _courseService.GetCourseScoreProgressPercentAsync(courseId, userId);
         
@@ -177,9 +180,18 @@ public class CourseController : ControllerBase
     
     [HttpGet("statistics/{courseId:guid}/course-score/{userId:guid}")]
     [Authorize]
-    public async Task<IActionResult> GetCourseScore(Guid courseId, Guid userId)
+    public async Task<ActionResult<double>> GetCourseScore(Guid courseId, Guid userId)
     {
         var result = await _courseService.GetUserCourseScoreAsync(courseId, userId);
+        
+        return Ok(result);
+    }
+
+    [HttpPost("statistics/aggregated/{userId:guid}")]
+    [Authorize]
+    public async Task<ActionResult<IReadOnlyList<AggregatedCourseStatsDto>>> GetStatisticsForAllEnrolledCourses(Guid userId, [FromBody] List<Guid> courseIds)
+    {
+        var result = await _courseService.GetStatisticsForCoursesAsync(userId, courseIds);
         
         return Ok(result);
     }

@@ -42,6 +42,17 @@ public class ExamService : IExamService
         return _mapper.Map<IReadOnlyList<ExamRecordDto>>(exams);  
     }
 
+    public async Task<ExamRecordDto> GetExamOverviewByIdAsync(Guid examId)
+    {
+        await EnsureHasAccessToGenericExamContent(examId);
+        
+        var exam = await _examRepository.GetByIdAsync(examId);
+        if (exam is null)
+            throw new KeyNotFoundException($"Exam with ID {examId} not found");
+        
+        return _mapper.Map<ExamRecordDto>(exam); 
+    }
+
     public async Task<ExamDetailsDto?> GetExamDetailsAsync(Guid examId)
     {
         await EnsureHasAccessToGenericExamContent(examId);

@@ -16,6 +16,8 @@ public class LectureDao : EntityDaoBase<Guid>, ISoftDelete
     public Guid CourseId { get; set; }
     public Guid? TopicId { get; set; }
     public Guid AuthorId { get; set; }
+    public Guid? LastUpdaterId { get; set; }
+    
     public IEnumerable<string>? ContentLinks { get; set; }
     public IEnumerable<string>? FilePaths { get; set; }
     public bool IsDeleted { get; set; }
@@ -24,4 +26,5 @@ public class LectureDao : EntityDaoBase<Guid>, ISoftDelete
     public CourseDao Course { get; set; }
     public TopicDao Topic { get; set; }
     public ApplicationUser Author { get; set; }
+    public ApplicationUser? LastUpdater { get; set; }
 }

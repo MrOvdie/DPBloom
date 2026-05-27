@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using DPBloom.Application.Exam;
 using DPBloom.Core.Exam;
 
 namespace DPBloom.Infrastructure.Exam;
@@ -20,16 +21,19 @@ public class ExamDaoProfile : Profile
             .ForMember(dest => dest.Exam, opt => opt.Ignore())
             .ForMember(dest => dest.Options, opt => opt.Ignore())
             .ReverseMap();
+        CreateMap<QuestionDao, QuestionDto>().ReverseMap();
 
         CreateMap<AnswerOptionModel, AnswerOptionDao>()
             .ForMember(dest => dest.Question, opt => opt.Ignore())
             .ReverseMap();
+        CreateMap<AnswerOptionDao, OptionDto>().ReverseMap();
 
         CreateMap<QuestionResultModel, QuestionResultDao>().ReverseMap(); //TODO: Check this later
+        CreateMap<QuestionResultModel, QuestionResultDao>().ReverseMap(); 
         
         CreateMap<AttemptResultModel, AttemptResultDao>().ReverseMap();
-
-        CreateMap<QuestionResultModel, QuestionResultDao>().ReverseMap(); 
+        
+        CreateMap<UserExamAttemptDao, AttemptResultModel>().ReverseMap();
 
         //CreateMap<AnswerOptionDao, AnswerOptionModel>();
         /*CreateMap<ExamModel, ExamDao>().ReverseMap();

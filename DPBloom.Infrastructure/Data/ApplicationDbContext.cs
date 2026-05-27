@@ -49,12 +49,19 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
         builder.Entity<BloomAnalysisDao>().HasQueryFilter(x => !x.IsDeleted);
         builder.Entity<UserExamAttemptDao>().HasQueryFilter(x => !x.IsDeleted);
         builder.Entity<UserEnrollmentDao>().HasQueryFilter(x => !x.IsDeleted);
+        builder.Entity<RecommendationTemplateDao>().HasQueryFilter(x => !x.IsDeleted);
 
 
         builder.Entity<CourseDao>()
             .HasOne(c => c.Author)
             .WithMany()
             .HasForeignKey(c => c.AuthorId)
+            .OnDelete(DeleteBehavior.Restrict);
+        
+        builder.Entity<CourseDao>()
+            .HasOne(c => c.LastUpdater)
+            .WithMany()
+            .HasForeignKey(c => c.LastUpdaterId)
             .OnDelete(DeleteBehavior.Restrict);
 
 
@@ -109,6 +116,12 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
             .HasOne(a => a.AttemptResult)
             .WithOne(ar => ar.Attempt)
             .HasForeignKey<AttemptResultDao>(ar => ar.AttemptId);
+        
+        builder.Entity<UserExamAttemptDao>()
+            .HasOne(a => a.Course) 
+            .WithMany()            
+            .HasForeignKey(a => a.CourseId)
+            .OnDelete(DeleteBehavior.Restrict);
 
 
         builder.Entity<QuestionResultDao>()
@@ -152,5 +165,12 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
             .WithOne(a => a.AttemptResult) 
             .HasForeignKey<AttemptResultDao>(ar => ar.AttemptId)
             .OnDelete(DeleteBehavior.Restrict);
+        
+        
+        builder.Entity<RecommendationTemplateDao>() 
+            .HasOne(ar => ar.Course)
+            .WithMany()
+            .HasForeignKey(ar => ar.CourseId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }

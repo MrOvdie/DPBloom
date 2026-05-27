@@ -1,6 +1,4 @@
-﻿using System.Data.Entity;
-using System.Runtime.InteropServices.ComTypes;
-using AutoMapper;
+﻿using AutoMapper;
 using DPBloom.Application.Exam;
 using DPBloom.Core.Exam;
 using DPBloom.Core.Exam.Enums;
@@ -32,17 +30,9 @@ public class AttemptResultRepository : RepositoryBase<AttemptResultModel, UserEx
     }
 
     public async Task SaveAttemptResultAsync(Guid attemptId, AttemptResultModel model)
-    {
-        await DbContext.UserExamAttempts
-            .Where(a => a.Id == attemptId)
-            .ExecuteUpdateAsync(s =>
-                s.SetProperty(b => b.TotalScore, model.Score));
-
+    {      
         var attemptResultDao = Mapper.Map<AttemptResultDao>(model);
-        attemptResultDao.Id = Guid.NewGuid();
-        attemptResultDao.CreatedOn = attemptResultDao.UpdatedOn = DateTime.UtcNow;
-        attemptResultDao.AttemptId = attemptId;
-
+        
         await DbContext.AttemptResults.AddAsync(attemptResultDao);
 
         await DbContext.SaveChangesAsync();

@@ -1,10 +1,10 @@
-﻿using System.Data.Entity;
-using AutoMapper;
+﻿using AutoMapper;
 using DPBloom.Application.Bloom;
 using DPBloom.Core.Bloom;
 using DPBloom.Core.Exam.Enums;
 using DPBloom.Infrastructure.Base;
 using DPBloom.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace DPBloom.Infrastructure.Bloom;
 

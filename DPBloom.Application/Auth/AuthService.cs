@@ -1,11 +1,10 @@
-﻿using System.Security.Claims;
-using AutoMapper;
+﻿using AutoMapper;
 using DPBloom.Application.Auth.Contracts;
 using DPBloom.Application.User;
 using DPBloom.Core.User;
 using FluentValidation;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.IdentityModel.JsonWebTokens;
+using UUIDNext;
 
 namespace DPBloom.Application.Auth;
 
@@ -36,10 +35,18 @@ public class AuthService : IAuthService
 
         var newUser = _mapper.Map<UserModel>(user);
 
-        newUser.Id = Guid.NewGuid();
+        var group = user.Group?.ToLower() ?? "";
+        var faculty = user.Faculty?.ToLower() ?? "";
+
+        var fName = !string.IsNullOrEmpty(user.FirstName) ? user.FirstName.ToLower()[0].ToString() : "";
+        var mName = !string.IsNullOrEmpty(user.MiddleName) ? user.MiddleName.ToLower()[0].ToString() : "";
+        var lName = !string.IsNullOrEmpty(user.LastName) ? user.LastName.ToLower()[0].ToString() : "";
+
+        newUser.UserName = $"{DateTime.UtcNow.Year}{group}{faculty}{fName}{mName}{lName}";
+        
+        newUser.Id = Uuid.NewDatabaseFriendly(Database.SqlServer);
         newUser.CreatedOn = newUser.UpdatedOn = DateTime.UtcNow;
-        newUser.UserName =
-            $"{DateTime.UtcNow.Year}{user.Group.ToLower()}{user.Faculty.ToLower()}{user.FirstName.ToLower().First()}{user.MiddleName.ToLower().First()}{user.LastName.ToLower().First()}";
+        newUser.UserName = newUser.UserName = $"{DateTime.UtcNow.Year}{group}{faculty}{fName}{mName}{lName}";
 
         return await _userRepository.CreateUserAsync(newUser, user.Password,
             "Student");
@@ -52,39 +59,18 @@ public class AuthService : IAuthService
         if (userModel is null)
             throw new UnauthorizedAccessException("Invalid email or password.");
 
-        var token = _jwtTokenGenerator.GenerateToken(userModel); //TODO: CAN BE PROBLEM HERE -> uncomment old code
+        var token = _jwtTokenGenerator.GenerateToken(userModel);
 
         var response = new AuthResponseDto
         { 
+            UserId = userModel.Id,
             Token = token, 
             FullName = userModel.GetFullName(), 
-            AvatarUrl = userModel.AvatarUrl 
+            Username = userModel.UserName,
+            AvatarUrl = userModel.AvatarUrl
         };
 
         return response;
-        
-        /*var userModel = await _userRepository.ValidateUserAsync(request.LoginDetails, request.Password);
-
-        if (userModel is null)
-            throw new UnauthorizedAccessException("Invalid email or password.");
-
-        var claims = new List<Claim>
-        {
-            new Claim(ClaimTypes.Name, userModel.UserName),
-            new Claim(ClaimTypes.Email, userModel.Email),
-            new Claim(ClaimTypes.NameIdentifier, userModel.Id.ToString()),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-        };
-
-        foreach (var role in userModel.RoleClaims)
-        {
-            claims.Add(new Claim(ClaimTypes.Role, role));
-        }
-
-        var token = _jwtTokenGenerator.GenerateToken(userModel, claims);
-
-        return new AuthResponseDto
-            { Token = token, FullName = userModel.GetFullName(), AvatarUrl = userModel.AvatarUrl };*/
     }
     
     public async Task<UserProfileDto> UpdateUserProfileAsync(Guid userId, UpdateUserProfileDto dto)

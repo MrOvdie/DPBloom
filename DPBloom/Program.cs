@@ -47,7 +47,7 @@ builder.Services.AddMediatR(cfg => { cfg.RegisterServicesFromAssembly(typeof(Cou
 
 // 1. Налаштування бази даних
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("LaptopConnection"))); //"LaptopConnection", "DesktopConnection"
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DesktopConnection"))); //"LaptopConnection", "DesktopConnection"
 
 // 2. Налаштування Identity (Без стандартних API ендпоінтів)
 builder.Services.AddIdentityCore<ApplicationUser>(options =>
@@ -72,7 +72,7 @@ builder.Services.AddAutoMapper(config =>
         new LectureDaoProfile(), new CourseDaoProfile(), new TopicDaoProfile(), new ExamDaoProfile(), new UserProfile(), new BloomDaoProfile(),
         new EnrollmentDaoProfile(),
         new LectureDtoProfile(), new TopicDtoProfile(), new CourseDtoProfile(), new ExamDtoProfile(), new BloomDtoProfile(),
-        new UserDtoProfile()
+        new UserDtoProfile(), new EnrollmentDtoProfile(),
     });
 });
 
@@ -104,6 +104,8 @@ builder.Services.AddScoped<IExamService, ExamService>();
 builder.Services.AddScoped<IBloomService, BloomService>();
 builder.Services.AddScoped<IAttemptService, AttemptService>();
 builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
+builder.Services.AddScoped<IRecommendationService, RecommendationService>();
+builder.Services.AddScoped<IUserService, UserService>();
 
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
@@ -170,6 +172,18 @@ builder.Services.AddOpenApi(options =>
     });
 });
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAngularApp",
+        policy =>
+        {
+            policy.WithOrigins("http://localhost:4200") 
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowCredentials();
+        });
+});
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -188,6 +202,9 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
+
+app.UseRouting();
+app.UseCors("AllowAngularApp");
 
 app.UseAuthentication();
 app.UseAuthorization();

@@ -8,10 +8,10 @@ public static class ValidationExtensions
     {
         return ruleBuilder
             .NotEmpty().WithMessage("Password is required.")
-            .MinimumLength(6).WithMessage("Пароль має містити щонайменше 6 символів.")
+            .MinimumLength(6).WithMessage("Password must be at least 6 characters long.")
             //.Matches(@"[A-Z]+").WithMessage("Пароль має містити хоча б одну велику літеру.")
-            .Matches(@"[a-z]+").WithMessage("Пароль має містити хоча б одну малу літеру.")
-            .Matches(@"[0-9]+").WithMessage("Пароль має містити хоча б одну цифру.");
+            .Matches(@"[a-z]+").WithMessage("Password must contain at least one lowercase letter.")
+            .Matches(@"[0-9]+").WithMessage("Password must contain at least one number.");
         // .Matches(@"[\!\?\*\.]+").WithMessage("Пароль має містити спецсимвол."); // Якщо колись знадобиться
     }
 }

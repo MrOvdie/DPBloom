@@ -1,5 +1,6 @@
 ﻿using DPBloom.Application.ANN;
 using DPBloom.Application.Exam;
+using DPBloom.Application.Exam.Contracts;
 using DPBloom.Application.Exam.Contracts.Create;
 using DPBloom.Application.Exam.Contracts.Update;
 using Microsoft.AspNetCore.Authorization;
@@ -23,7 +24,7 @@ public class ExamsController : ControllerBase
 
     [HttpGet("all")]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> GetAll()
+    public async Task<ActionResult<List<ExamRecordDto>>> GetAll()
     {
         var exams = await _examService.GetAllExamsAsync();
        
@@ -32,7 +33,7 @@ public class ExamsController : ControllerBase
 
     [HttpGet("course/{courseId:guid}")]
     [Authorize]
-    public async Task<IActionResult> GetExamsByCourse(Guid courseId)
+    public async Task<ActionResult<List<ExamRecordDto>>> GetExamsByCourse(Guid courseId)
     {
         var exams = await _examService.GetExamsByCourseAsync(courseId);
         
@@ -41,43 +42,58 @@ public class ExamsController : ControllerBase
     
     [HttpGet("{id:guid}")]
     [Authorize(Roles = "Teacher, Admin")]
-    public async Task<IActionResult> GetById(Guid id)
+    public async Task<ActionResult<ExamDetailsDto>> GetByWithDetailsId(Guid id)
     {
         var exam = await _examService.GetExamDetailsAsync(id);
         if (exam == null) return NotFound();
         
         return Ok(exam);
     }
+    
+    //TODO: write a method for exam preview for the exam page
 
+    [HttpGet("overview/{examId:guid}")]
+    [Authorize]
+    public async Task<ActionResult<ExamRecordDto>> GetOverviewById(Guid examId)
+    {
+        var result = await _examService.GetExamOverviewByIdAsync(examId);
+        
+        return Ok(result);
+    }
+    
     [HttpPost("{courseId:guid}")]
     [Authorize(Policy = "RequireTeacherPrivileges")] 
-    public async Task<IActionResult> Create(Guid courseId, [FromBody] CreateExamDto request)
+    public async Task<ActionResult<ExamDetailsDto>> Create(Guid courseId, [FromBody] CreateExamDto request)
     {
         var examId = await _examService.CreateExamAsync(courseId, request);
-        return CreatedAtAction(nameof(GetById), new { id = examId }, request);
+        
+        return CreatedAtAction(nameof(GetByWithDetailsId), new { id = examId }, request);
     }
 
     [HttpPut("{id:guid}")]
     [Authorize(Policy = "RequireTeacherPrivileges")] 
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateExamDto request)
     {
-        await _examService.UpdateExamAsync(id, request);
-        return NoContent();
+        var result = await _examService.UpdateExamAsync(id, request);
+        
+        return Ok(result);
     }
 
     [HttpDelete("{id:guid}")]
     [Authorize(Policy = "RequireTeacherPrivileges")] 
-    public async Task<IActionResult> Delete(Guid id)
+    public async Task<ActionResult<ExamDetailsDto>> Delete(Guid id)
     {
         var result = await _examService.DeleteExamAsync(id);
+        
         return Ok(result);
     }
     
     [HttpPatch("{id:guid}/restore")]
     [Authorize(Policy = "RequireTeacherPrivileges")]  
-    public async Task<IActionResult> Restore(Guid id)
+    public async Task<ActionResult<ExamDetailsDto>> Restore(Guid id)
     {
         var result = await _examService.RestoreExamAsync(id);
+        
         return Ok(result);
     }
 
@@ -86,6 +102,9 @@ public class ExamsController : ControllerBase
     public async Task<IActionResult> PredictBloomLevel([FromBody] string questionText)
     {
         var level = await _bloomPredictor.PredictLevelAsync(questionText);
+       
         return Ok(new { predictedLevel = level });
     }
+    
+    
 }

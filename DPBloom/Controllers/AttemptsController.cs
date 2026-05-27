@@ -70,7 +70,7 @@ public class AttemptsController : ControllerBase
 
     [HttpPost("{attemptId:guid}/finish")]
     [Authorize]
-    public async Task<IActionResult> FinishAttempt(Guid attemptId)
+    public async Task<ActionResult<AttemptResultDto>> FinishAttempt(Guid attemptId)
     {
         var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (!Guid.TryParse(userIdString, out var userId)) return Unauthorized();
@@ -80,7 +80,7 @@ public class AttemptsController : ControllerBase
     }
 
     [HttpGet("{attemptId:guid}/result")]
-    public async Task<IActionResult> GetResult(Guid attemptId)
+    public async Task<ActionResult<AttemptResultDto>> GetResult(Guid attemptId)
     {
         var result = await _attemptService.GetResultAsync(attemptId);
         if (result is null) return NotFound();
@@ -88,9 +88,17 @@ public class AttemptsController : ControllerBase
         return Ok(result);
     }
 
+    [HttpGet("{examId:guid}/attempts/{userId:guid}")]
+    [Authorize]
+    public async Task<ActionResult<IReadOnlyList<AttemptResultRecordDto>>> GetAttemptResultsByExamAndUserAsync(
+        Guid examId, Guid userId)
+    {
+        return NotFound();
+    }
+
     [HttpGet("{examId:guid}/exam-results")]
     [Authorize(Policy = "RequireTeacherPrivileges")]
-    public async Task<IActionResult> GetAttemptResultsByExamAsync(Guid examId)
+    public async Task<ActionResult<IReadOnlyList<AttemptResultRecordDto>>> GetAttemptResultsByExamAsync(Guid examId)
     {
         var result = await _attemptService.GetAttemptResultsByExamAsync(examId);
         
@@ -109,9 +117,13 @@ public class AttemptsController : ControllerBase
         return Ok(result);
     }
 
+  
+    //TODO: write two methods  where i'll get all my attempts for the exam with analytics
+    //TODO: write method where i'll get recommendations for all of my attempts
+
     [HttpGet("{examId:guid}/manual-evaluations")]
     [Authorize(Policy = "RequireTeacherPrivileges")]
-    public async Task<IActionResult> GetManualEvaluations(Guid examId)
+    public async Task<ActionResult<List<AttemptResultRecordDto>>> GetManualEvaluations(Guid examId)
     {
         var result = await _attemptService.GetAttemptResultsForManualReviewByExamAsync(examId);
         

@@ -49,10 +49,9 @@ public class LectureService : ILectureService
         return _mapper.Map<LectureDto>(lecture);
     }
 
-    public async Task<LectureDto> GetByIdWithAccessAsync(Guid lectureId)
+    public async Task<LectureDetailsDto> GetDetailsByIdWithAccessAsync(Guid lectureId)
     {
         var courseId = await _lectureRepository.GetCourseIdByLectureIdAsync(lectureId);
-
         if (courseId is null)
             throw new KeyNotFoundException($"Can't find CourseId in lecture {lectureId}");
 
@@ -60,17 +59,16 @@ public class LectureService : ILectureService
 
         var lecture = await _lectureRepository.GetByIdAsync(lectureId);
 
-        return _mapper.Map<LectureDto>(lecture);
+        return _mapper.Map<LectureDetailsDto>(lecture);
     }
-
+    
     public async Task<IReadOnlyList<LectureDto>> GetLectureByNameAsync(string lectureName)
     {
         var lectures = await _lectureRepository.GetAsync(predicate: l => l.Title == lectureName);
-
         if (lectures is null)
             throw new KeyNotFoundException($"Lectures with Title {lectureName} not found");
 
-        return _mapper.Map<IReadOnlyList<LectureDto>>(lectures);
+        return _mapper.Map<List<LectureDto>>(lectures);
     }
 
     public async Task<IReadOnlyList<LectureDto>> GetLecturesByCourseAsync(Guid courseId)
@@ -81,10 +79,10 @@ public class LectureService : ILectureService
         
         var lectures = await _lectureRepository.GetByCourseAsync(courseId);
 
-        return _mapper.Map<IReadOnlyList<LectureDto>>(lectures);
+        return _mapper.Map<List<LectureDto>>(lectures);
     }
 
-    public async Task<IEnumerable<LectureDto>> GetLecturesByTopicAsync(Guid topicId)
+    public async Task<IReadOnlyList<LectureDto>> GetLecturesByTopicAsync(Guid topicId)
     {
         var userId = _currentUserService.GetUserId();
 
@@ -96,23 +94,21 @@ public class LectureService : ILectureService
 
         var lecture = await _lectureRepository.GetByCourseAsync(courseId.Value);
 
-        return _mapper.Map<IReadOnlyList<LectureDto>>(lecture);
+        return _mapper.Map<List<LectureDto>>(lecture);
     }
 
-    public async Task<IEnumerable<LectureDto>> GetLectureByAuthorAsync(Guid authorId)
+    public async Task<IReadOnlyList<LectureDto>> GetLectureByAuthorAsync(Guid authorId)
     {
         var lectures = await _lectureRepository.GetAsync(predicate: l => l.AuthorId.Equals(authorId));
-
         if (lectures is null)
             throw new KeyNotFoundException($"Lectures from Author {authorId} not found");
 
-        return _mapper.Map<IEnumerable<LectureDto>>(lectures);
+        return _mapper.Map<List<LectureDto>>(lectures);
     }
 
-    public async Task<LectureDto> CreateAsync(Guid courseId, CreateLecture createLecture)
+    public async Task<LectureDetailsDto> CreateAsync(Guid courseId, CreateLecture createLecture)
     {
         var validationResult = await _createValidator.ValidateAsync(createLecture);
-
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
 
@@ -127,13 +123,12 @@ public class LectureService : ILectureService
 
         var createdLecture = await _lectureRepository.AddAsync(createLectureModel);
 
-        return _mapper.Map<LectureDto>(createdLecture);
+        return _mapper.Map<LectureDetailsDto>(createdLecture);
     }
 
-    public async Task<LectureDto> UpdateAsync(Guid lectureId, UpdateLecture updateLecture)
+    public async Task<LectureDetailsDto> UpdateAsync(Guid lectureId, UpdateLecture updateLecture)
     {
         var validationResult = await _updateValidator.ValidateAsync(updateLecture);
-
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
 
@@ -151,7 +146,7 @@ public class LectureService : ILectureService
 
         var updatedLecture = await _lectureRepository.UpdateAsync(updatedExistedLectureModel);
 
-        return _mapper.Map<LectureDto>(updatedLecture);
+        return _mapper.Map<LectureDetailsDto>(updatedLecture);
     }
 
     public async Task<LectureDto> DeleteAsync(Guid lectureId)
@@ -177,7 +172,6 @@ public class LectureService : ILectureService
     public async Task<LectureModel> GetEntityByIdAsync(Guid id)
     {
         var lecture = await _lectureRepository.GetByIdAsync(id);
-
         if (lecture is null)
             throw new KeyNotFoundException($"Lecture with ID {id} not found");
 
@@ -209,7 +203,6 @@ public class LectureService : ILectureService
         var currentUserId = _currentUserService.GetUserId();
 
         var teacherId = await _lectureRepository.IsLectureAuthorAsync(lectureId, currentUserId);
-
         if (teacherId) return;
 
         await EnsureStudentIsEnrolledAsync(lectureId, currentUserId);
@@ -222,8 +215,8 @@ public class LectureService : ILectureService
             return;
 
         var userId = _currentUserService.GetUserId();
+        
         var isAuthor = await _lectureRepository.IsLectureAuthorAsync(lectureId, userId);
-
         if (!isAuthor)
         {
             var lectureExists = await _lectureRepository.ExistsAsync(l => l.Id.Equals(lectureId));

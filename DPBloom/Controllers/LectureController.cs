@@ -18,7 +18,7 @@ public class LectureController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<ActionResult<IReadOnlyList<LectureDto>>> GetAll()
     {
         var lectures = await _lectureService.GetAllAsync();
        
@@ -27,9 +27,9 @@ public class LectureController : ControllerBase
 
     [HttpGet("{id:guid}")]
     [Authorize]
-    public async Task<IActionResult> GetById(Guid id)
+    public async Task<ActionResult<LectureDetailsDto>> GetById(Guid id)
     {
-        var lecture = await _lectureService.GetByIdWithAccessAsync(id);
+        var lecture = await _lectureService.GetDetailsByIdWithAccessAsync(id);
         if (lecture is null) return NotFound();
 
         return Ok(lecture);
@@ -37,7 +37,7 @@ public class LectureController : ControllerBase
     
     [HttpGet("name/{lectureName}")]
     [Authorize]
-    public async Task<IActionResult> GetLectureByName(string lectureName)
+    public async Task<ActionResult<IReadOnlyList<LectureDto>>> GetLectureByName(string lectureName)
     {
         var lecture = await _lectureService.GetLectureByNameAsync(lectureName);
         
@@ -46,7 +46,7 @@ public class LectureController : ControllerBase
     
     [HttpGet("course/{courseId:guid}")]
     [Authorize]
-    public async Task<IActionResult> GetLectureByCourse(Guid courseId)
+    public async Task<ActionResult<IReadOnlyList<LectureDto>>> GetLecturesByCourse(Guid courseId)
     {
         var lecture = await _lectureService.GetLecturesByCourseAsync(courseId);
         
@@ -55,7 +55,7 @@ public class LectureController : ControllerBase
     
     [HttpGet("topic/{topicId:guid}")]
     [Authorize]
-    public async Task<IActionResult> GetLectureByTopic(Guid topicId)
+    public async Task<ActionResult<IReadOnlyList<LectureDto>>> GetLecturesByTopic(Guid topicId)
     {
         var lecture = await _lectureService.GetLecturesByTopicAsync(topicId);
         
@@ -64,7 +64,7 @@ public class LectureController : ControllerBase
     
     [HttpGet("author/{authorId:guid}")]
     [Authorize]
-    public async Task<IActionResult> GetLectureByAuthor(Guid authorId)
+    public async Task<ActionResult<IReadOnlyList<LectureDto>>> GetLecturesByAuthor(Guid authorId)
     {
         var lecture = await _lectureService.GetLectureByAuthorAsync(authorId);
         
@@ -73,7 +73,7 @@ public class LectureController : ControllerBase
 
     [HttpPost("{courseId:guid}")]
     [Authorize(Roles = "Teacher, Admin")]
-    public async Task<IActionResult> Create(Guid courseId, [FromBody] CreateLecture request)
+    public async Task<ActionResult<LectureDetailsDto>> Create(Guid courseId, [FromBody] CreateLecture request)
     {
         var lectureDto = await _lectureService.CreateAsync(courseId, request);
         return CreatedAtAction(nameof(GetById), new { id = lectureDto.Id }, lectureDto);
@@ -81,7 +81,7 @@ public class LectureController : ControllerBase
 
     [HttpPut("{id:guid}")]
     [Authorize(Roles = "Teacher, Admin")]
-    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateLecture request)
+    public async Task<ActionResult<LectureDetailsDto>> Update(Guid id, [FromBody] UpdateLecture request)
     {
         var result = await _lectureService.UpdateAsync(id, request);
         return Ok(result);
@@ -89,7 +89,7 @@ public class LectureController : ControllerBase
 
     [HttpDelete("{id:guid}")]
     [Authorize(Roles = "Teacher, Admin")]
-    public async Task<IActionResult> Delete(Guid id)
+    public async Task<ActionResult<LectureDto>> Delete(Guid id)
     {
         var result = await _lectureService.DeleteAsync(id);
         return Ok(result);
@@ -97,7 +97,7 @@ public class LectureController : ControllerBase
     
     [HttpPatch("{id:guid}/restore")]
     [Authorize(Roles = "Teacher, Admin")]
-    public async Task<IActionResult> Restore(Guid id)
+    public async Task<ActionResult<LectureDto>> Restore(Guid id)
     {
         var result = await _lectureService.RestoreAsync(id);
         return Ok(result);

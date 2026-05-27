@@ -6,11 +6,11 @@ namespace DPBloom.Application.Lecture;
 
 public interface ILectureService : ICrud<LectureDto>
 {
-    Task<LectureDto> GetByIdWithAccessAsync(Guid lectureId);
+    Task<LectureDetailsDto> GetDetailsByIdWithAccessAsync(Guid lectureId);
     Task<IReadOnlyList<LectureDto>> GetLectureByNameAsync(string lectureName);
     Task<IReadOnlyList<LectureDto>> GetLecturesByCourseAsync(Guid courseId);
-    Task<IEnumerable<LectureDto>> GetLecturesByTopicAsync(Guid topicId);
-    Task<IEnumerable<LectureDto>> GetLectureByAuthorAsync(Guid authorId);
-    Task<LectureDto> CreateAsync(Guid courseId, CreateLecture createLecture);
-    Task<LectureDto> UpdateAsync(Guid lectureId, UpdateLecture updateLecture);
+    Task<IReadOnlyList<LectureDto>> GetLecturesByTopicAsync(Guid topicId);
+    Task<IReadOnlyList<LectureDto>> GetLectureByAuthorAsync(Guid authorId);
+    Task<LectureDetailsDto> CreateAsync(Guid courseId, CreateLecture createLecture);
+    Task<LectureDetailsDto> UpdateAsync(Guid lectureId, UpdateLecture updateLecture);
 }

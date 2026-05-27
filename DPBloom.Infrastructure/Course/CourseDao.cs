@@ -12,10 +12,12 @@ public class CourseDao : EntityDaoBase<Guid>, ISoftDelete
     public string Title { get; set; }
     public string? Description { get; set; }
     public Guid AuthorId { get; set; }
+    public Guid? LastUpdaterId { get; set; }
     public bool isFinished { get; set; }
     public bool isPublished { get; set; }
 
     public ApplicationUser Author { get; set; }
+    public ApplicationUser? LastUpdater { get; set; }
     public ICollection<TopicDao> Topics { get; set; } = new List<TopicDao>();
     public ICollection<LectureDao> Lectures { get; set; } = new List<LectureDao>();
     public ICollection<ExamDao> Exams { get; set; } = new List<ExamDao>();

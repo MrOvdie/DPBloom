@@ -8,6 +8,7 @@ namespace DPBloom.Application.Exam;
 public interface IExamService
 {
     Task<IReadOnlyList<ExamRecordDto>> GetAllExamsAsync();
+    Task<ExamRecordDto> GetExamOverviewByIdAsync(Guid examId);
     Task<ExamDetailsDto?> GetExamDetailsAsync(Guid examId);
     Task<IReadOnlyList<ExamRecordDto>> GetExamsByCourseAsync(Guid courseId);
     Task<Guid> CreateExamAsync(Guid courseId, CreateExamDto createExam);

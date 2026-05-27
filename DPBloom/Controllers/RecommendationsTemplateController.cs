@@ -19,7 +19,7 @@ public class RecommendationsTemplateController : ControllerBase
 
     [HttpGet]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> GetAll()
+    public async Task<ActionResult<IReadOnlyList<RecommendationTemplateDto>>> GetAll()
     {
         var result = await _recommendationService.GetRecommendationsAsync();
 
@@ -28,7 +28,7 @@ public class RecommendationsTemplateController : ControllerBase
     
     [HttpGet("{id:guid}")]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> GetAll(Guid id)
+    public async Task<ActionResult<RecommendationTemplateDto>> GetAll(Guid id)
     {
         var result = await _recommendationService.GetRecommendationByIdAsync(id);
 
@@ -37,7 +37,7 @@ public class RecommendationsTemplateController : ControllerBase
 
     [HttpPost]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> Create([FromBody] CreateRecommendationTemplate request)
+    public async Task<ActionResult<RecommendationTemplateDto>> Create([FromBody] CreateRecommendationTemplate request)
     {
         var result = await _recommendationService.CreateAsync(request);
         
@@ -46,7 +46,7 @@ public class RecommendationsTemplateController : ControllerBase
     
     [HttpPut("{id:guid}")]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> Create(Guid id, [FromBody] UpdateRecommendationTemplate request)
+    public async Task<ActionResult<RecommendationTemplateDto>> Create(Guid id, [FromBody] UpdateRecommendationTemplate request)
     {
         var result = await _recommendationService.UpdateAsync(id, request);
         
@@ -55,7 +55,7 @@ public class RecommendationsTemplateController : ControllerBase
     
     [HttpDelete("{id:guid}")]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> Delete(Guid id)
+    public async Task<ActionResult<RecommendationTemplateDto>> Delete(Guid id)
     {
         var result = await _recommendationService.DeleteAsync(id);
         
@@ -64,7 +64,7 @@ public class RecommendationsTemplateController : ControllerBase
     
     [HttpPatch("{id:guid}")]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> Restore(Guid id)
+    public async Task<ActionResult<RecommendationTemplateDto>> Restore(Guid id)
     {
         var result = await _recommendationService.RestoreAsync(id);
         

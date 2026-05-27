@@ -11,9 +11,12 @@ public class TopicDao : EntityDaoBase<Guid>, ISoftDelete
     public string? Description { get; set; }
     public Guid CourseId { get; set; }
     public Guid AuthorId { get; set; }
+    public Guid? LastUpdaterId { get; set; }
+    
     public bool IsDeleted { get; set; }
     public DateTime? DeletedOn { get; set; }
 
     public ApplicationUser Author { get; set; }
+    public ApplicationUser? LastUpdater { get; set; }
     public CourseDao Course { get; set; }
 }

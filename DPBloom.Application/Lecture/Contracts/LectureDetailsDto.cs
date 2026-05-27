@@ -3,12 +3,16 @@ using DPBloom.Core.Exam.Enums;
 
 namespace DPBloom.Application.Lecture.Contracts;
 
-public class LectureDto : ModelBase<Guid>
+public class LectureDetailsDto : ModelBase<Guid>
 {
     public string Title { get; set; }
     public string? Description { get; set; }
+    public string Content { get; set; }
     public BloomLevel? TargetBloomLevel { get; set; }
     public Guid CourseId { get; set; }
     public Guid? TopicId { get; set; }
     public Guid AuthorId { get; set; }
+    public Guid LastUpdaterId { get; set; }
+    public IEnumerable<string>? ContentLinks { get; set; }
+    public IEnumerable<string>? FilePaths { get; set; }
 }

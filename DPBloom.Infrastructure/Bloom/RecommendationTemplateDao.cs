@@ -1,5 +1,6 @@
 ﻿using DPBloom.Core.Exam.Enums;
 using DPBloom.Infrastructure.Base;
+using DPBloom.Infrastructure.Course;
 using DPBloom.Infrastructure.Extensions;
 
 namespace DPBloom.Infrastructure.Bloom;
@@ -13,4 +14,6 @@ public class RecommendationTemplateDao : EntityDaoBase<Guid>, ISoftDelete
     public Guid? CourseId { get; set; }
     public bool IsDeleted { get; set; }
     public DateTime? DeletedOn { get; set; }
+    
+    public CourseDao? Course { get; set; }
 }

@@ -19,15 +19,16 @@ public class TopicController : ControllerBase
 
     [HttpGet]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> GetAll()
+    public async Task<ActionResult<IReadOnlyList<TopicDto>>> GetAll()
     {
         var topics = await _topicService.GetAllAsync();
+        
         return Ok(topics);
     }
 
     [HttpGet("{id:guid}")]
     [Authorize]
-    public async Task<IActionResult> GetById(Guid id)
+    public async Task<ActionResult<TopicDto>> GetById(Guid id)
     {
         var topic = await _topicService.GetByIdWithAccessAsync(id);
         if (topic is null) return NotFound();
@@ -37,7 +38,7 @@ public class TopicController : ControllerBase
     
     [HttpGet("name/{topicName}")]
     [Authorize]
-    public async Task<IActionResult> GetLectureByName(string topicName)
+    public async Task<ActionResult<IReadOnlyList<TopicDto>>> GetLectureByName(string topicName)
     {
         var lecture = await _topicService.GetTopicByNameAsync(topicName);
         
@@ -46,7 +47,7 @@ public class TopicController : ControllerBase
     
     [HttpGet("course/{courseId:guid}")]
     [Authorize]
-    public async Task<IActionResult> GetLectureByCourse(Guid courseId)
+    public async Task<ActionResult<IReadOnlyList<TopicDto>>> GetLectureByCourse(Guid courseId)
     {
         var lecture = await _topicService.GetTopicsByCourseAsync(courseId);
         
@@ -55,7 +56,7 @@ public class TopicController : ControllerBase
     
     [HttpGet("author/{authorId:guid}")]
     [Authorize]
-    public async Task<IActionResult> GetLectureByAuthor(Guid authorId)
+    public async Task<ActionResult<IReadOnlyList<TopicDto>>> GetLectureByAuthor(Guid authorId)
     {
         var lecture = await _topicService.GetTopicsByAuthorAsync(authorId);
         
@@ -64,33 +65,37 @@ public class TopicController : ControllerBase
 
     [HttpPost("{courseId:guid}")]
     [Authorize(Roles = "Teacher, Admin")]
-    public async Task<IActionResult> Create(Guid courseId, [FromBody] CreateTopic request)
+    public async Task<ActionResult<TopicDto>> Create(Guid courseId, [FromBody] CreateTopic request)
     {
         var topicDto = await _topicService.CreateAsync(courseId, request);
+        
         return CreatedAtAction(nameof(GetById), new { id = topicDto.Id }, topicDto);
     }
 
     [HttpPut("{id:guid}")]
     [Authorize(Roles = "Teacher, Admin")]
-    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateTopic request)
+    public async Task<ActionResult<TopicDto>> Update(Guid id, [FromBody] UpdateTopic request)
     {
         var result = await _topicService.UpdateAsync(id, request);
+       
         return Ok(result);
     }
 
     [HttpDelete("{id:guid}")]
     [Authorize(Roles = "Teacher, Admin")]
-    public async Task<IActionResult> Delete(Guid id)
+    public async Task<ActionResult<TopicDto>> Delete(Guid id)
     {
         var result = await _topicService.DeleteAsync(id);
+        
         return Ok(result);
     }
     
     [HttpPatch("{id:guid}/restore")]
     [Authorize(Roles = "Teacher, Admin")]
-    public async Task<IActionResult> Restore(Guid id)
+    public async Task<ActionResult<TopicDto>> Restore(Guid id)
     {
         var result = await _topicService.RestoreAsync(id);
+        
         return Ok(result);
     }
 }

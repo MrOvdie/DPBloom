@@ -16,7 +16,9 @@ public interface ICourseService : ICrud<CourseDto>
     Task EnrollUserAsync(Guid courseId, Guid userId);
     Task DismissUserAsync(Guid enrollmentId);
 
-    Task<double> GetCourseExamsProgressPercentAsync(Guid courseId, Guid userId);
-    Task<double> GetCourseScoreProgressPercentAsync(Guid courseId, Guid userId);
-    Task<double> GetUserCourseScoreAsync(Guid courseId, Guid userId);
+    Task<double> GetCourseExamsProgressPercentAsync(Guid courseId, Guid userId, bool skipAccessCheck = false);
+    Task<double> GetCourseScoreProgressPercentAsync(Guid courseId, Guid userId, bool skipAccessCheck = false);
+    Task<double> GetUserCourseScoreAsync(Guid courseId, Guid userId, bool skipAccessCheck = false);
+
+    Task<IReadOnlyList<AggregatedCourseStatsDto>> GetStatisticsForCoursesAsync(Guid userId, List<Guid> courseIds);
 }

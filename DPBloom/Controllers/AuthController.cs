@@ -1,5 +1,6 @@
 ﻿using DPBloom.Application.Auth;
 using DPBloom.Application.Auth.Contracts;
+using DPBloom.Application.User;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -33,7 +34,7 @@ public class AuthController : ControllerBase
 
     [HttpPost("login")]
     [AllowAnonymous]
-    public async Task<IActionResult> Login([FromBody] LoginRequestDto request)
+    public async Task<ActionResult<AuthResponseDto>> Login([FromBody] LoginRequestDto request)
     {
         var responseDto = await _authService.LoginAsync(request);
 
@@ -42,7 +43,7 @@ public class AuthController : ControllerBase
 
     [HttpPut("update-profile/{userId:guid}")]
     [Authorize]
-    public async Task<IActionResult> UpdateUserProfile(Guid userId, [FromBody] UpdateUserProfileDto updateProfileDto)
+    public async Task<ActionResult<UserProfileDto>> UpdateUserProfile(Guid userId, [FromBody] UpdateUserProfileDto updateProfileDto)
     {
         var result = await _authService.UpdateUserProfileAsync(userId, updateProfileDto);
        

@@ -10,8 +10,7 @@ public class UserExamAttemptModel : EntityBase<Guid>
     public Guid? AttemptResultId { get; set; }
     public Guid UserId { get; set; }
     public AttemptStatus Status { get; set; }
-    public double? TotalScore { get; set; }
     public DateTime StartedAt { get; set; }
     public DateTime FinishedAt { get; set; }
-    public bool IsValid { get; set; }
+    //public bool IsValid { get; set; }
 }

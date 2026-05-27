@@ -12,6 +12,7 @@ public class ExamDao : EntityDaoBase<Guid>, ISoftDelete
     public string? Description { get; set; }
     public Guid CourseId { get; set; }
     public Guid AuthorId { get; set; }
+    public Guid? LastUpdaterId { get; set; }
     public Guid? TopicId { get; set; }
     public TimeSpan Duration { get; set; }
     public DateTime StartsAt { get; set; }
@@ -24,6 +25,7 @@ public class ExamDao : EntityDaoBase<Guid>, ISoftDelete
 
     public ICollection<QuestionDao> Questions { get; set; }
     public ApplicationUser Author { get; set; }
+    public ApplicationUser? LastUpdater { get; set; }
     public CourseDao Course { get; set; }
     public TopicDao Topic { get; set; }
     
