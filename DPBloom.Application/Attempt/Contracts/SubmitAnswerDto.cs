@@ -1,6 +1,6 @@
 ﻿using DPBloom.Application.Base;
 
-namespace DPBloom.Application.Exam.Contracts;
+namespace DPBloom.Application.Attempt.Contracts;
 
 public class SubmitAnswerDto : ModelBase<Guid>
 {

@@ -2,8 +2,9 @@ using DPBloom.Application.Base;
 
 namespace DPBloom.Application.Exam.Contracts.Update;
 
-public class UpdateQuestionDto : ModelBase<Guid>
+public class UpdateQuestionDto
 {
+    public Guid? Id { get; set; }
     public string? Text { get; set; }
     public int? Type { get; set; }
     public double? ScoreWeight { get; set; }

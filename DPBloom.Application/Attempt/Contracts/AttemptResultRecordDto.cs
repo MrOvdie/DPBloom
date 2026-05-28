@@ -1,7 +1,8 @@
-﻿namespace DPBloom.Application.Exam.Contracts;
+﻿namespace DPBloom.Application.Attempt.Contracts;
 
 public class AttemptResultRecordDto
 {
+    public Guid Id { get; set; }
     public Guid ResultId { get; set; }
     
     public Guid AttemptId { get; set; }
@@ -14,6 +15,9 @@ public class AttemptResultRecordDto
     public double? Score { get; set; }
     public double MaxScore { get; set; }
     public double? ScorePercentage { get; set; }
+    
+    public DateTime StartedAt { get; set; }
+    public DateTime? FinishedAt { get; set; }
 
     public bool? Passed { get; set; }
 }

@@ -1,6 +1,6 @@
 ﻿using DPBloom.Application.Base;
 
-namespace DPBloom.Application.Exam;
+namespace DPBloom.Application.Exam.Contracts;
 
 public class QuestionDto : ModelBase<Guid>
 {

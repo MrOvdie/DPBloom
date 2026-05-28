@@ -2,6 +2,7 @@
 using DPBloom.Application.Enrollment.Contracts;
 using DPBloom.Core.User;
 using FluentValidation;
+using UUIDNext;
 
 namespace DPBloom.Application.Enrollment;
 
@@ -44,7 +45,9 @@ public class EnrollmentService : IEnrollmentService
         //TODO: check if I accidentally missed smth
 
         var createdEnrollmentModel = _mapper.Map<UserEnrollmentModel>(createEnrollment);
-        createdEnrollmentModel.CourseId = createEnrollment.CourseId;
+        createdEnrollmentModel.Id = Uuid.NewDatabaseFriendly(Database.SqlServer);
+        createdEnrollmentModel.CreatedOn = createdEnrollmentModel.UpdatedOn = DateTime.UtcNow;
+        //createdEnrollmentModel.CourseId = createEnrollment.CourseId;
 
         var createdEnrollment = await _enrollmentRepository.AddAsync(createdEnrollmentModel);
 

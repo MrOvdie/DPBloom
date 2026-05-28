@@ -1,7 +1,7 @@
 ﻿using DPBloom.Application.Exam.Contracts;
 using FluentValidation;
 
-namespace DPBloom.Application.Exam.Validators;
+namespace DPBloom.Application.Attempt.Validators;
 
 public class TeacherEvaluationValidator : AbstractValidator<TeacherEvaluationDto>
 {

@@ -10,7 +10,7 @@ public class OnnxBloomPredictor : IBloomLevelPredictor, IDisposable
 
     public OnnxBloomPredictor()
     {
-        _session = new InferenceSession("C:\\Users\\maxim\\OneDrive\\Projects\\RiderProjects\\DPBloom\\DPBloom.Infrastructure\\ANN\\MlModels\\bloom_model.onnx");
+        _session = new InferenceSession("C:\\Users\\maxim\\OneDrive\\Documents\\University\\4Year\\Diploma\\DPBloom\\DPBloom\\DPBloom.Infrastructure\\ANN\\MlModels\\bloom_model.onnx");
     }
 
     public async Task<int> PredictLevelAsync(string questionText)

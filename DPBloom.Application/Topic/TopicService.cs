@@ -4,6 +4,7 @@ using DPBloom.Application.Enrollment;
 using DPBloom.Application.Topic.Contracts;
 using DPBloom.Core.Topic;
 using FluentValidation;
+using UUIDNext;
 
 namespace DPBloom.Application.Topic;
 
@@ -97,6 +98,8 @@ public class TopicService : ITopicService
             throw new ValidationException(validationResult.Errors);
 
         var createTopicModel = _mapper.Map<TopicModel>(createTopic);
+        createTopicModel.Id = Uuid.NewDatabaseFriendly(Database.SqlServer);
+        createTopicModel.CreatedOn = createTopicModel.UpdatedOn = DateTime.UtcNow;
         createTopicModel.AuthorId = createTopicModel.LastUpdaterId = _currentUserService.GetUserId();
         createTopicModel.CourseId = courseId;
 

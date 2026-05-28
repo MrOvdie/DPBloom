@@ -1,4 +1,5 @@
-﻿using DPBloom.Application.Auth;
+﻿using DPBloom.Application.Attempt;
+using DPBloom.Application.Auth;
 using DPBloom.Application.Bloom.Contracts;
 using DPBloom.Application.Course;
 using DPBloom.Application.Enrollment;

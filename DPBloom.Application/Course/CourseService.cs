@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using DPBloom.Application.Attempt;
 using DPBloom.Application.Auth;
 using DPBloom.Application.Course.Contracts;
 using DPBloom.Application.Course.Events;
@@ -9,6 +10,7 @@ using DPBloom.Core.Course;
 using DPBloom.Core.User;
 using FluentValidation;
 using MediatR;
+using UUIDNext;
 
 namespace DPBloom.Application.Course;
 
@@ -120,6 +122,8 @@ public class CourseService : ICourseService
             throw new InvalidOperationException($"Course with name {createCourse.Title} already exists");
 
         var createCourseModel = _mapper.Map<CourseModel>(createCourse);
+        createCourseModel.Id = Uuid.NewDatabaseFriendly(Database.SqlServer);
+        createCourseModel.CreatedOn = createCourseModel.UpdatedOn = DateTime.UtcNow;
         createCourseModel.AuthorId = createCourseModel.LastUpdaterId = _currentUserService.GetUserId();
         createCourseModel.IsFinished = false;
 

@@ -70,11 +70,11 @@ public class ExamsController : ControllerBase
         return CreatedAtAction(nameof(GetByWithDetailsId), new { id = examId }, request);
     }
 
-    [HttpPut("{id:guid}")]
+    [HttpPut("{examId:guid}")]
     [Authorize(Policy = "RequireTeacherPrivileges")] 
-    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateExamDto request)
+    public async Task<IActionResult> Update(Guid examId, [FromBody] UpdateExamDto request)
     {
-        var result = await _examService.UpdateExamAsync(id, request);
+        var result = await _examService.UpdateExamAsync(examId, request);
         
         return Ok(result);
     }

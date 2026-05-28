@@ -1,6 +1,8 @@
 ﻿using AutoMapper;
+using DPBloom.Application.Attempt.Contracts;
 using DPBloom.Application.Auth;
 using DPBloom.Application.Enrollment;
+using DPBloom.Application.Exam;
 using DPBloom.Application.Exam.Contracts;
 using DPBloom.Core.Exam;
 using DPBloom.Core.Exam.Enums;
@@ -8,14 +10,13 @@ using FluentValidation;
 using UUIDNext;
 using Type = DPBloom.Core.Exam.Enums.Type;
 
-namespace DPBloom.Application.Exam;
+namespace DPBloom.Application.Attempt;
 
 public class AttemptService : IAttemptService
 {
     private readonly IAttemptRepository _attemptRepository;
     private readonly IAttemptResultRepository _attemptResultRepository;
     private readonly IExamRepository _examRepository;
-    private readonly IExamService _examService;
     private readonly ICurrentUserService _currentUserService;
     private readonly IEnrollmentRepository _enrollmentRepository;
     private readonly IValidator<SubmitAnswerDto> _submitAnswerValidator;
@@ -23,7 +24,7 @@ public class AttemptService : IAttemptService
     private readonly IMapper _mapper;
 
     public AttemptService(IAttemptRepository attemptRepository, IMapper mapper, IExamRepository examRepository,
-        IExamService examService, IAttemptResultRepository attemptResultRepository,
+        IAttemptResultRepository attemptResultRepository,
         ICurrentUserService currentUserService, IEnrollmentRepository enrollmentRepository,
         IValidator<SubmitAnswerDto> submitAnswerValidator, IValidator<TeacherEvaluationDto> teacherEvaluationValidator)
     {
@@ -34,19 +35,18 @@ public class AttemptService : IAttemptService
         _teacherEvaluationValidator = teacherEvaluationValidator;
         _attemptRepository = attemptRepository;
         _examRepository = examRepository;
-        _examService = examService;
         _mapper = mapper;
     }
 
     public async Task<Guid> StartAsync(Guid examId)
     {
-        var exam = await _examService.GetEntityByIdAsync(examId);
+        var exam = await _examRepository.GetWithQuestionsAsync(examId); //Check this
 
         if (exam.Exam.StartsAt > DateTime.UtcNow || exam.Exam.FinishesAt < DateTime.UtcNow)
             throw new InvalidOperationException("Exam is not available for start");
 
         var userId = _currentUserService.GetUserId();
-        
+
         await EnrollmentCheck(exam.Exam.CourseId, userId); //Check this
 
         var userAttempt = new UserExamAttemptModel
@@ -68,7 +68,7 @@ public class AttemptService : IAttemptService
     public async Task SubmitAnswerAsync(Guid attemptId, SubmitAnswerDto answer)
     {
         var userId = _currentUserService.GetUserId();
-        
+
         await ValidateAttemptAccessAndStatusAsync(userId, attemptId);
 
         var validationResult = await _submitAnswerValidator.ValidateAsync(answer);
@@ -85,7 +85,7 @@ public class AttemptService : IAttemptService
     public async Task SaveAllAnswersAsync(Guid attemptId, List<SubmitAnswerDto> answers)
     {
         var userId = _currentUserService.GetUserId();
-        
+
         await ValidateAttemptAccessAndStatusAsync(userId, attemptId);
 
         var validationResults = await Task.WhenAll(answers.Select(a => _submitAnswerValidator.ValidateAsync(a)));
@@ -97,7 +97,10 @@ public class AttemptService : IAttemptService
 
         foreach (var answerModel in answerModels)
         {
+            answerModel.Id = Uuid.NewDatabaseFriendly(Database.SqlServer);
             answerModel.AttemptId = attemptId;
+            answerModel.CreatedOn = answerModel.UpdatedOn = DateTime.UtcNow;
+            answerModel.SubmittedAt = DateTime.UtcNow;
         }
 
         await _attemptRepository.SaveAllAnswersAsync(attemptId, answerModels);
@@ -106,7 +109,7 @@ public class AttemptService : IAttemptService
     public async Task<AttemptResultDto> FinishAsync(Guid attemptId)
     {
         var userId = _currentUserService.GetUserId();
-        
+
         var attempt = await ValidateAttemptAccessAndStatusAsync(userId, attemptId);
 
         if (attempt.Status is AttemptStatus.Submitted or AttemptStatus.Expired)
@@ -160,19 +163,30 @@ public class AttemptService : IAttemptService
 
         return _mapper.Map<AttemptResultDto>(savedResult);
     }
-    
+
+    public async Task<AttemptResultRecordDto> GetResultRecordAsync(Guid attemptResultId)
+    {
+        await EnsureUserHasAccessToAttemptResultAsync(attemptResultId);
+        
+        var savedResult = await _attemptResultRepository.GetRecordByIdAsync(attemptResultId);
+        if (savedResult is null)
+            throw new KeyNotFoundException($"Can't find attempt result with id {attemptResultId}.");
+
+        return savedResult;
+    }
+
     public async Task<IReadOnlyList<AttemptResultRecordDto>> GetAttemptResultsByExamAsync(Guid examId)
     {
         var exam = await _examRepository.GetByIdAsync(examId);
         if (exam is null)
             throw new KeyNotFoundException($"Can't find exam with id {examId}.");
-        
+
         var userId = _currentUserService.GetUserId();
         var isAdmin = _currentUserService.IsAdmin();
-        
+
         if (exam.AuthorId != userId && !isAdmin)
             throw new UnauthorizedAccessException("You are not allowed to access this exam attempt results.");
-        
+
         var attemptResults = await _attemptResultRepository
             .GetAllAttemptsResultsByExamAsync(examId);
 
@@ -189,7 +203,7 @@ public class AttemptService : IAttemptService
 
         return examAttempt;
     }
-    
+
     private async Task<AttemptResultModel> CalculateAndSaveResultAsync(UserExamAttemptModel attempt,
         ExamAggregateModel exam)
     {
@@ -318,7 +332,7 @@ public class AttemptService : IAttemptService
             case Type.OpenAnswer:
                 var userText = userAnswers.FirstOrDefault()?.FreeTextAnswer?.Trim();
 
-                var isMatch = correctOptions.Any(ao => 
+                var isMatch = correctOptions.Any(ao =>
                     string.Equals(ao.Text.Trim(), userText, StringComparison.OrdinalIgnoreCase));
 
                 result.IsCorrect = isMatch;
@@ -347,9 +361,9 @@ public class AttemptService : IAttemptService
         var exam = await _examRepository.GetWithQuestionsAsync(examId);
         if (exam is null)
             throw new KeyNotFoundException($"Can't find exam with id {examId}.");
-        
+
         var user = _currentUserService.GetUserId();
-        
+
         if (exam.Exam.AuthorId != user)
             throw new UnauthorizedAccessException("You are not allowed to perform this action.");
 
@@ -402,6 +416,15 @@ public class AttemptService : IAttemptService
         return _mapper.Map<List<AttemptResultRecordDto>>(manualAttemptResults);
     }
 
+    public async Task<IReadOnlyList<AttemptResultRecordDto>> GetUserExamAttempts(Guid userId, Guid examId)
+    {
+        await EnsureUserHasAccessToUserAttemptsAsync(userId, examId);
+
+        var attempts = await _attemptResultRepository.GetAllAttemptsResultsByUserByExamAsync(userId, examId);
+
+        return _mapper.Map<List<AttemptResultRecordDto>>(attempts);
+    }
+
 
     private async Task EnsureUserHasAccessToAttemptResultAsync(Guid attemptResultId)
     {
@@ -416,7 +439,24 @@ public class AttemptService : IAttemptService
             throw new KeyNotFoundException("Attempt result not found.");
 
         if (accessInfo.StudentId != currentUserId && accessInfo.TeacherId != currentUserId)
-            throw new UnauthorizedAccessException("Only the student, the course author, or admins can view this result.");
+            throw new UnauthorizedAccessException(
+                "Only the student, the course author, or admins can view this result.");
+    }
+
+    private async Task EnsureUserHasAccessToUserAttemptsAsync(Guid requestedUserId, Guid examId)
+    {
+        if (_currentUserService.IsAdmin())
+            return;
+
+        var currentUserId = _currentUserService.GetUserId();
+
+        if (currentUserId == requestedUserId)
+            return;
+
+        var isAuthor = await _examRepository.IsExamAuthorAsync(examId, requestedUserId);
+        if (!isAuthor)
+            throw new UnauthorizedAccessException(
+                "Only the student, the course author, or admins can view these attempts.");
     }
 
     private async Task EnrollmentCheck(Guid courseId, Guid userId)

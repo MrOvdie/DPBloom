@@ -1,8 +1,7 @@
-﻿using DPBloom.Application.Base;
+﻿using DPBloom.Application.Attempt.Contracts;
 using DPBloom.Application.Exam.Contracts;
-using DPBloom.Core.Exam;
 
-namespace DPBloom.Application.Exam;
+namespace DPBloom.Application.Attempt;
 
 public interface IAttemptService
 {
@@ -11,10 +10,12 @@ public interface IAttemptService
     Task SaveAllAnswersAsync(Guid attemptId, List<SubmitAnswerDto> answers);
     Task<AttemptResultDto> FinishAsync(Guid attemptId);
     Task<AttemptResultDto> GetResultAsync(Guid attemptId);
+    Task<AttemptResultRecordDto> GetResultRecordAsync(Guid attemptResultId);
     Task<IReadOnlyList<AttemptResultRecordDto>> GetAttemptResultsByExamAsync(Guid examId);
 
     Task<AttemptResultDto> CheckOpenTextAnswerAsync(Guid attemptResultId,
         IReadOnlyList<TeacherEvaluationDto> teacherEvaluations, Guid examId);
 
     Task<IReadOnlyList<AttemptResultRecordDto>> GetAttemptResultsForManualReviewByExamAsync(Guid examId);
+    Task<IReadOnlyList<AttemptResultRecordDto>> GetUserExamAttempts(Guid userId, Guid examId);
 }

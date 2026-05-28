@@ -1,5 +1,7 @@
 ﻿using System.Linq.Dynamic.Core;
 using AutoMapper;
+using DPBloom.Application.Attempt;
+using DPBloom.Application.Attempt.Contracts;
 using DPBloom.Application.Exam;
 using DPBloom.Application.Exam.Contracts;
 using DPBloom.Core.Exam;

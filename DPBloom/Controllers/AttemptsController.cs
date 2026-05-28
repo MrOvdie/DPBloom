@@ -1,5 +1,6 @@
 ﻿using System.Security.Claims;
-using DPBloom.Application.Exam;
+using DPBloom.Application.Attempt;
+using DPBloom.Application.Attempt.Contracts;
 using DPBloom.Application.Exam.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,10 +13,12 @@ namespace DPBloom.Controllers;
 public class AttemptsController : ControllerBase
 {
     private readonly IAttemptService _attemptService;
+    private readonly IAttemptAggregationService _attemptAggregationService;
 
-    public AttemptsController(IAttemptService attemptService)
+    public AttemptsController(IAttemptService attemptService, IAttemptAggregationService attemptAggregationService)
     {
         _attemptService = attemptService;
+        _attemptAggregationService = attemptAggregationService;
     }
 
     [HttpPost("{examId:guid}/start")]
@@ -80,12 +83,11 @@ public class AttemptsController : ControllerBase
     }
 
     [HttpGet("{attemptId:guid}/result")]
-    public async Task<ActionResult<AttemptResultDto>> GetResult(Guid attemptId)
+    public async Task<ActionResult<AttemptResultDto>> GetAttemptResultWithStats(Guid attemptId)
     {
-        var result = await _attemptService.GetResultAsync(attemptId);
-        if (result is null) return NotFound();
-
-        return Ok(result);
+       var result =  await _attemptService.GetResultAsync(attemptId);
+       
+       return Ok(result);
     }
 
     [HttpGet("{examId:guid}/attempts/{userId:guid}")]
@@ -93,7 +95,27 @@ public class AttemptsController : ControllerBase
     public async Task<ActionResult<IReadOnlyList<AttemptResultRecordDto>>> GetAttemptResultsByExamAndUserAsync(
         Guid examId, Guid userId)
     {
-        return NotFound();
+        var result = await _attemptService.GetUserExamAttempts(examId, userId);
+        
+        return Ok(result);
+    }
+
+    [HttpGet("{examId:guid}/attempts-stats/{userId:guid}")]
+    [Authorize]
+    public async Task<ActionResult<IReadOnlyList<AttemptResultWithStatsDto>>> GetAttemptsStatsByExamAndUserAsync(Guid examId, Guid userId)
+    {
+        var attemptAggregate = await _attemptAggregationService.GetAttemptResultsWithStatisticsByExamByUserAsync(examId, userId);
+        
+        return Ok(attemptAggregate);
+    }
+    
+    [HttpGet("/attempt-stats/{attemptResultId:guid}")]
+    [Authorize]
+    public async Task<ActionResult<AttemptResultWithStatsDto>> GetAttemptStatsByExamAndUserAsync(Guid attemptResultId)
+    {
+        var attemptAggregate = await _attemptAggregationService.GetAttemptResultsWithStatisticsByIdAsync(attemptResultId);
+        
+        return Ok(attemptAggregate);
     }
 
     [HttpGet("{examId:guid}/exam-results")]
@@ -101,7 +123,7 @@ public class AttemptsController : ControllerBase
     public async Task<ActionResult<IReadOnlyList<AttemptResultRecordDto>>> GetAttemptResultsByExamAsync(Guid examId)
     {
         var result = await _attemptService.GetAttemptResultsByExamAsync(examId);
-        
+
         return Ok(result);
     }
 
@@ -113,20 +135,16 @@ public class AttemptsController : ControllerBase
         [FromQuery] Guid examId)
     {
         var result = await _attemptService.CheckOpenTextAnswerAsync(attemptResultId, evaluations, examId);
-        
+
         return Ok(result);
     }
-
-  
-    //TODO: write two methods  where i'll get all my attempts for the exam with analytics
-    //TODO: write method where i'll get recommendations for all of my attempts
 
     [HttpGet("{examId:guid}/manual-evaluations")]
     [Authorize(Policy = "RequireTeacherPrivileges")]
     public async Task<ActionResult<List<AttemptResultRecordDto>>> GetManualEvaluations(Guid examId)
     {
         var result = await _attemptService.GetAttemptResultsForManualReviewByExamAsync(examId);
-        
+
         return Ok(result);
     }
 }

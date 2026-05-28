@@ -11,11 +11,8 @@ public class LectureDtoProfile : Profile
     {
         CreateMap<LectureModel, LectureDto>();
         CreateMap<LectureModel, LectureDetailsDto>().ReverseMap();
-        
-        CreateMap<CreateLecture, LectureModel>()
-            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => Uuid.NewDatabaseFriendly(Database.SqlServer)))
-            .ForMember(dest => dest.CreatedOn, opt => opt.MapFrom(src => DateTime.UtcNow))
-            .ForMember(dest => dest.UpdatedOn, opt => opt.MapFrom(src => DateTime.UtcNow));
+
+        CreateMap<CreateLecture, LectureModel>();
         CreateMap<UpdateLecture, LectureModel>()
             .ForAllMembers(opt => 
                 opt.Condition((_, _, srcMember) => 

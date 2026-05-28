@@ -1,5 +1,7 @@
 ﻿using AutoMapper;
+using DPBloom.Application.Attempt.Contracts;
 using DPBloom.Application.Exam;
+using DPBloom.Application.Exam.Contracts;
 using DPBloom.Core.Exam;
 
 namespace DPBloom.Infrastructure.Exam;
@@ -32,6 +34,14 @@ public class ExamDaoProfile : Profile
         CreateMap<QuestionResultModel, QuestionResultDao>().ReverseMap(); 
         
         CreateMap<AttemptResultModel, AttemptResultDao>().ReverseMap();
+        
+        CreateMap<AttemptResultDao, AttemptResultRecordDto>()
+            .ForMember(dest => dest.StartedAt, opt => opt.MapFrom(src => src.Attempt.StartedAt))
+            .ForMember(dest => dest.FinishedAt, opt => opt.MapFrom(src => src.Attempt.FinishedAt));
+        
+        CreateMap<AttemptResultDao, AttemptResultDto>()
+            .ForMember(dest => dest.StartedAt, opt => opt.MapFrom(src => src.Attempt.StartedAt))
+            .ForMember(dest => dest.FinishedAt, opt => opt.MapFrom(src => src.Attempt.FinishedAt));
         
         CreateMap<UserExamAttemptDao, AttemptResultModel>().ReverseMap();
 

@@ -1,8 +1,9 @@
-﻿using DPBloom.Application.Base;
+﻿using DPBloom.Application.Attempt.Contracts;
+using DPBloom.Application.Base;
 using DPBloom.Application.Exam.Contracts;
 using DPBloom.Core.Exam;
 
-namespace DPBloom.Application.Exam;
+namespace DPBloom.Application.Attempt;
 
 public interface IAttemptRepository : IRepository<UserExamAttemptModel>
 {

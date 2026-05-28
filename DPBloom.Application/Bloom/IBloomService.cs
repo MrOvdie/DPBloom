@@ -7,6 +7,7 @@ public interface IBloomService
     // 1. Аналіз конкретної спроби (для студента)
     Task<BloomAnalysisDto> AnalyzeAndSaveAttemptAsync(Guid attemptResultId);
     Task<BloomAnalysisDto?> GetAnalysisByAttemptResultIdAsync(Guid attemptResultId);
+    Task<IReadOnlyList<BloomAnalysisDto?>> GetAnalysisByAttemptResultIdsAsync(List<Guid> attemptResultIds);
 
     // 2. Агрегований аналіз курсу (для студента)
     Task<CourseBloomAnalysisDto> AnalyzeUserCourseAsync(Guid userId, Guid courseId);

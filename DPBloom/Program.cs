@@ -4,6 +4,7 @@ using System.Text.Json.Serialization;
 using AutoMapper;
 using AutoMapper.Extensions.ExpressionMapping;
 using DPBloom.Application.ANN;
+using DPBloom.Application.Attempt;
 using DPBloom.Application.Auth;
 using DPBloom.Application.Bloom;
 using DPBloom.Application.Course;
@@ -72,7 +73,7 @@ builder.Services.AddAutoMapper(config =>
         new LectureDaoProfile(), new CourseDaoProfile(), new TopicDaoProfile(), new ExamDaoProfile(), new UserProfile(), new BloomDaoProfile(),
         new EnrollmentDaoProfile(),
         new LectureDtoProfile(), new TopicDtoProfile(), new CourseDtoProfile(), new ExamDtoProfile(), new BloomDtoProfile(),
-        new UserDtoProfile(), new EnrollmentDtoProfile(),
+        new UserDtoProfile(), new EnrollmentDtoProfile(), new AttemptDtoProfile(),
     });
 });
 
@@ -93,7 +94,7 @@ builder.Services.AddScoped<IAttemptRepository, AttemptRepository>();
 builder.Services.AddScoped<IAttemptResultRepository, AttemptResultRepository>();
 builder.Services.AddScoped<IBloomRepository, BloomRepository>();
 builder.Services.AddScoped<IEnrollmentRepository, EnrollmentRepository>();
-builder.Services.AddScoped<IRecommendationRepository, RecommendationRepository>();
+builder.Services.AddScoped<IRecommendationTemplateRepository, RecommendationTemplateRepository>();
 
 // 6. Реєстрація бізнес-сервісів
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -104,8 +105,9 @@ builder.Services.AddScoped<IExamService, ExamService>();
 builder.Services.AddScoped<IBloomService, BloomService>();
 builder.Services.AddScoped<IAttemptService, AttemptService>();
 builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
-builder.Services.AddScoped<IRecommendationService, RecommendationService>();
+builder.Services.AddScoped<IRecommendationTemplateService, RecommendationTemplateTemplateService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IAttemptAggregationService, AttemptAggregationService>();
 
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();

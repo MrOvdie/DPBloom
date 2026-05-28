@@ -9,10 +9,7 @@ public class EnrollmentDtoProfile : Profile
 {
     public EnrollmentDtoProfile()
     {
-        CreateMap<CreateEnrollment, UserEnrollmentModel>()
-            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => Uuid.NewDatabaseFriendly(Database.SqlServer)))
-            .ForMember(dest => dest.CreatedOn, opt => opt.MapFrom(src => DateTime.UtcNow))
-            .ForMember(dest => dest.UpdatedOn, opt => opt.MapFrom(src => DateTime.UtcNow));
+        CreateMap<CreateEnrollment, UserEnrollmentModel>();
         
         CreateMap<UpdateEnrollment, UserEnrollmentModel>()
             .ForAllMembers(opt => 

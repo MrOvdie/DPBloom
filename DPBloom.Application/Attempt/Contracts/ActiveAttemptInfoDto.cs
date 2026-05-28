@@ -1,4 +1,4 @@
-﻿namespace DPBloom.Application.Exam.Contracts;
+﻿namespace DPBloom.Application.Attempt.Contracts;
 
 public class ActiveAttemptInfoDto
 {

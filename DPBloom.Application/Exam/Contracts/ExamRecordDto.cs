@@ -2,7 +2,7 @@
 
 public class ExamRecordDto
 {
-    public Guid ExamId { get; set; }
+    public Guid Id { get; set; }
     public string Title { get; set; }
     public string? Description { get; set; }
     public Guid CourseId { get; set; }
@@ -12,4 +12,5 @@ public class ExamRecordDto
     public TimeSpan Duration { get; set; }
     public DateTime StartsAt { get; set; }
     public DateTime FinishesAt { get; set; }
+    public bool CanCheckAttempts { get; set; }
 }

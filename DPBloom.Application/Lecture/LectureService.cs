@@ -5,6 +5,7 @@ using DPBloom.Application.Lecture.Contracts;
 using DPBloom.Application.Topic;
 using DPBloom.Core.Lecture;
 using FluentValidation;
+using UUIDNext;
 
 namespace DPBloom.Application.Lecture;
 
@@ -118,6 +119,8 @@ public class LectureService : ILectureService
                 $"Lecture with name {createLecture.Title} already exists in this course");
 
         var createLectureModel = _mapper.Map<LectureModel>(createLecture);
+        createLectureModel.Id = Uuid.NewDatabaseFriendly(Database.SqlServer);
+        createLectureModel.CreatedOn = createLectureModel.UpdatedOn = DateTime.UtcNow;
         createLectureModel.AuthorId = createLectureModel.LastUpdaterId = _currentUserService.GetUserId();
         createLectureModel.CourseId = courseId;
 

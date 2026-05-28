@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using DPBloom.Application.Attempt;
 using DPBloom.Application.Auth;
 using DPBloom.Application.Bloom.Contracts;
 using DPBloom.Application.Exam;
@@ -14,7 +15,7 @@ namespace DPBloom.Application.Bloom;
 public class BloomService : IBloomService
 {
     private readonly IBloomRepository _bloomRepository;
-    private readonly IRecommendationRepository _recommendationRepository;
+    private readonly IRecommendationTemplateRepository _recommendationTemplateRepository;
     private readonly IAttemptResultRepository _attemptResultRepository;
     private readonly IExamRepository _examRepository;
     private readonly ILectureRepository _lectureRepository;
@@ -27,14 +28,14 @@ public class BloomService : IBloomService
         IAttemptResultRepository attemptResultRepository,
         IExamRepository examRepository,
         ILectureRepository lectureRepository,
-        IMapper mapper, IRecommendationRepository recommendationRepository)
+        IMapper mapper, IRecommendationTemplateRepository recommendationTemplateRepository)
     {
         _bloomRepository = bloomRepository;
         _attemptResultRepository = attemptResultRepository;
         _examRepository = examRepository;
         _lectureRepository = lectureRepository;
         _mapper = mapper;
-        _recommendationRepository = recommendationRepository;
+        _recommendationTemplateRepository = recommendationTemplateRepository;
     }
 
     public async Task<BloomAnalysisDto> AnalyzeAndSaveAttemptAsync(Guid attemptResultId)
@@ -95,7 +96,7 @@ public class BloomService : IBloomService
 
         if (weakLevels.Count != 0)
         {
-            var textTemplates = await _recommendationRepository.GetTemplatesByLevelsAsync(weakLevels);
+            var textTemplates = await _recommendationTemplateRepository.GetTemplatesByLevelsAsync(weakLevels);
 
             IReadOnlyList<LectureModel> lectures = new List<LectureModel>();
             if (examAggregate.Exam.TopicId.HasValue)
@@ -142,6 +143,13 @@ public class BloomService : IBloomService
         var analysis = await _bloomRepository.GetByAttemptResultIdAsync(attemptResultId);
 
         return _mapper.Map<BloomAnalysisDto>(analysis);
+    }
+
+    public async Task<IReadOnlyList<BloomAnalysisDto?>> GetAnalysisByAttemptResultIdsAsync(List<Guid> attemptResultIds)
+    {
+        var analysis = await _bloomRepository.GetAsync(bam => attemptResultIds.Contains(bam.AttemptResultId));
+
+        return _mapper.Map<List<BloomAnalysisDto>>(analysis);
     }
 
     public async Task<CourseBloomAnalysisDto> AnalyzeUserCourseAsync(Guid userId, Guid courseId)

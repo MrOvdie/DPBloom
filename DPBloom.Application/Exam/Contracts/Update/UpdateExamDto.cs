@@ -14,6 +14,7 @@ public class UpdateExamDto : ModelBase<Guid>
     public double? MinimalPassScore { get; set; }
     public bool? CanSkip { get; set; }
     public bool? ShowResults { get; set; }
+    public bool? CanCheckAttempts { get; set; }
     public bool? IsRandomOrder { get; set; }
 
     public List<UpdateQuestionDto>? Questions { get; set; }

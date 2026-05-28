@@ -22,7 +22,7 @@ public class ExamRepository : RepositoryBase<ExamModel, ExamDao, ApplicationDbCo
         return Mapper.Map<List<ExamModel>>(examsDao);
     }
 
-    public async Task<ExamAggregateModel?> GetWithQuestionsAsync(Guid examId)
+    /*public async Task<ExamAggregateModel?> GetWithQuestionsAsync(Guid examId)
     {
         var examDao = await DbContext.Exams
             .Include(e => e.Questions)
@@ -30,6 +30,28 @@ public class ExamRepository : RepositoryBase<ExamModel, ExamDao, ApplicationDbCo
             .FirstOrDefaultAsync(e => e.Id.Equals(examId));
 
         return Mapper.Map<ExamAggregateModel>(examDao);
+    }*/
+    
+    public async Task<ExamAggregateModel?> GetWithQuestionsAsync(Guid examId)
+    {
+        var examDao = await DbContext.Exams
+            .Include(e => e.Questions)
+            .ThenInclude(q => q.Options)
+            .FirstOrDefaultAsync(e => e.Id == examId);
+
+        if (examDao == null) return null;
+
+        var aggregate = new ExamAggregateModel
+        {
+            Exam = Mapper.Map<ExamModel>(examDao),
+            Questions = Mapper.Map<List<QuestionModel>>(examDao.Questions ?? new List<QuestionDao>()),
+        
+            AnswerOptions = examDao.Questions is not null 
+                ? Mapper.Map<List<AnswerOptionModel>>(examDao.Questions.SelectMany(q => q.Options ?? new List<AnswerOptionDao>()))
+                : []
+        };
+
+        return aggregate;
     }
 
     public async Task<IReadOnlyList<UserQuestionAnswerModel>> GetUserAnswersForQuestionAsync(Guid attemptId, Guid questionId)

@@ -1,4 +1,7 @@
 ﻿using AutoMapper;
+using AutoMapper.QueryableExtensions;
+using DPBloom.Application.Attempt;
+using DPBloom.Application.Attempt.Contracts;
 using DPBloom.Application.Exam;
 using DPBloom.Core.Exam;
 using DPBloom.Core.Exam.Enums;
@@ -60,6 +63,14 @@ public class AttemptResultRepository : RepositoryBase<AttemptResultModel, UserEx
         return Mapper.Map<List<AttemptResultModel>>(attemptsResultsDao);
     }
 
+    public async Task<IReadOnlyList<AttemptResultModel>> GetAllAttemptsResultsByUserByExamAsync(Guid userId, Guid examId)
+    {
+        var attemptsResultsDao = await DbContext.AttemptResults
+            .Where(ar => ar.UserId.Equals(userId) && ar.ExamId.Equals(examId)).ToListAsync();
+
+        return Mapper.Map<List<AttemptResultModel>>(attemptsResultsDao);
+    }
+
     public async Task<IReadOnlyList<AttemptResultModel>> GetAllAttemptsResultsByExamAsync(Guid examId)
     {
         var attemptsResultsDao = await DbContext.AttemptResults
@@ -108,6 +119,14 @@ public class AttemptResultRepository : RepositoryBase<AttemptResultModel, UserEx
             .Select(ar => new AttemptAccessInfo(
                 ar.Attempt.UserId, 
                 ar.Exam.AuthorId)) 
+            .FirstOrDefaultAsync();
+    }
+    
+    public async Task<AttemptResultRecordDto?> GetRecordByIdAsync(Guid attemptResultId)
+    {
+        return await DbContext.AttemptResults
+            .Where(a => a.Id == attemptResultId)
+            .ProjectTo<AttemptResultRecordDto>(Mapper.ConfigurationProvider) 
             .FirstOrDefaultAsync();
     }
 }

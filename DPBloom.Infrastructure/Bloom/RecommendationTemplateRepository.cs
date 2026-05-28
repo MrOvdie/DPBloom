@@ -8,9 +8,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DPBloom.Infrastructure.Bloom;
 
-public class RecommendationRepository : RepositoryBase<RecommendationTemplateModel, RecommendationTemplateDao, ApplicationDbContext>, IRecommendationRepository
+public class RecommendationTemplateRepository : RepositoryBase<RecommendationTemplateModel, RecommendationTemplateDao, ApplicationDbContext>, IRecommendationTemplateRepository
 {
-    public RecommendationRepository(ApplicationDbContext context, IMapper mapper) 
+    public RecommendationTemplateRepository(ApplicationDbContext context, IMapper mapper) 
         : base(context, mapper)
     {
     }

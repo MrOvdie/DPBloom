@@ -11,6 +11,7 @@ public class CreateExamDto
     public double? MinimalPassScore { get; set; }
     public bool CanSkip { get; set; }
     public bool ShowResults { get; set; }
+    public bool CanCheckAttempts { get; set; }
     public bool IsRandomOrder { get; set; }
 
     public List<CreateQuestionDto> Questions { get; set; }

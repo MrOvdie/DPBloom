@@ -4,7 +4,7 @@ using DPBloom.Core.Exam.Enums;
 
 namespace DPBloom.Application.Bloom;
 
-public interface IRecommendationRepository : IRepository<RecommendationTemplateModel>
+public interface IRecommendationTemplateRepository : IRepository<RecommendationTemplateModel>
 {
     Task<IReadOnlyList<RecommendationTemplateModel>> GetTemplatesByLevelsAsync(List<BloomLevel> levels, Guid? courseId = null);
 }

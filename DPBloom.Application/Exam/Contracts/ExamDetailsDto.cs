@@ -13,8 +13,10 @@ public class ExamDetailsDto : ModelBase<Guid>
     public TimeSpan Duration { get; set; }
     public DateTime StartsAt { get; set; }
     public DateTime FinishesAt { get; set; }
+    public double MinimalPassScore { get; set; }
     public bool CanSkip { get; set; }
     public bool ShowResults { get; set; }
+    public bool CanCheckAttempts { get; set; }
     public bool IsRandomOrder { get; set; }
     
     public List<QuestionDto> Questions { get; set; }

@@ -2,10 +2,10 @@
 
 namespace DPBloom.Application.Bloom;
 
-public interface IRecommendationService
+public interface IRecommendationTemplateService
 {
-    Task<IReadOnlyList<RecommendationTemplateDto>> GetRecommendationsAsync();
-    Task<RecommendationTemplateDto> GetRecommendationByIdAsync(Guid id);
+    Task<IReadOnlyList<RecommendationTemplateDto>> GetRecommendationTemplatesAsync();
+    Task<RecommendationTemplateDto> GetRecommendationTemplateByIdAsync(Guid id);
     Task<RecommendationTemplateDto> CreateAsync(CreateRecommendationTemplate createTemplate);
     Task<RecommendationTemplateDto> UpdateAsync(Guid id, UpdateRecommendationTemplate updateTemplate);
     Task<RecommendationTemplateDto> DeleteAsync(Guid id);

@@ -1,4 +1,5 @@
-﻿using DPBloom.Application.Exam;
+﻿using DPBloom.Application.Attempt;
+using DPBloom.Application.Exam;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 

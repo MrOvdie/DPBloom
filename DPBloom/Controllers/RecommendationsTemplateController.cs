@@ -10,18 +10,18 @@ namespace DPBloom.Controllers;
 [Authorize]
 public class RecommendationsTemplateController : ControllerBase
 {
-    private readonly IRecommendationService _recommendationService;
+    private readonly IRecommendationTemplateService _recommendationTemplateService;
 
-    public RecommendationsTemplateController(IRecommendationService recommendationService)
+    public RecommendationsTemplateController(IRecommendationTemplateService recommendationTemplateService)
     {
-        _recommendationService = recommendationService;
+        _recommendationTemplateService = recommendationTemplateService;
     }
 
     [HttpGet]
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult<IReadOnlyList<RecommendationTemplateDto>>> GetAll()
     {
-        var result = await _recommendationService.GetRecommendationsAsync();
+        var result = await _recommendationTemplateService.GetRecommendationTemplatesAsync();
 
         return Ok(result);
     }
@@ -30,7 +30,7 @@ public class RecommendationsTemplateController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult<RecommendationTemplateDto>> GetAll(Guid id)
     {
-        var result = await _recommendationService.GetRecommendationByIdAsync(id);
+        var result = await _recommendationTemplateService.GetRecommendationTemplateByIdAsync(id);
 
         return Ok(result);
     }
@@ -39,7 +39,7 @@ public class RecommendationsTemplateController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult<RecommendationTemplateDto>> Create([FromBody] CreateRecommendationTemplate request)
     {
-        var result = await _recommendationService.CreateAsync(request);
+        var result = await _recommendationTemplateService.CreateAsync(request);
         
         return Ok(result);
     }
@@ -48,7 +48,7 @@ public class RecommendationsTemplateController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult<RecommendationTemplateDto>> Create(Guid id, [FromBody] UpdateRecommendationTemplate request)
     {
-        var result = await _recommendationService.UpdateAsync(id, request);
+        var result = await _recommendationTemplateService.UpdateAsync(id, request);
         
         return Ok(result);
     }
@@ -57,7 +57,7 @@ public class RecommendationsTemplateController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult<RecommendationTemplateDto>> Delete(Guid id)
     {
-        var result = await _recommendationService.DeleteAsync(id);
+        var result = await _recommendationTemplateService.DeleteAsync(id);
         
         return Ok(result);
     }
@@ -66,7 +66,7 @@ public class RecommendationsTemplateController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult<RecommendationTemplateDto>> Restore(Guid id)
     {
-        var result = await _recommendationService.RestoreAsync(id);
+        var result = await _recommendationTemplateService.RestoreAsync(id);
         
         return Ok(result);
     }
