@@ -18,6 +18,8 @@ public class AttemptResultDto
 
     public DateTime StartedAt { get; set; }
     public DateTime? FinishedAt { get; set; }
+    
+    public DateTime EvaluatedOn { get; set; }
 
     public bool Passed { get; set; }
 

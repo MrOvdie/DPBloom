@@ -18,19 +18,23 @@ public class AttemptAggregationService : IAttemptAggregationService
 
     public async Task<IReadOnlyList<AttemptResultWithStatsDto>> GetAttemptResultsWithStatisticsByExamByUserAsync(Guid userId, Guid examId)
     {
-        var attempts = await _attemptService.GetUserExamAttempts(userId, examId);
+        var attemptRecords = await _attemptService.GetUserExamResultsAttempts(userId, examId);
     
-        if (attempts is null || !attempts.Any())
+        if (attemptRecords is null || !attemptRecords.Any())
             return [];
 
-        var attemptResultIds = attempts.Select(ar => ar.Id).ToList();
+        var attemptResultIds = attemptRecords.Select(ar => ar.Id).ToList();
+        
+        var attempts = await _attemptService.GetUserExamAttempts(userId, examId);
 
         var bloomStats = await _bloomService.GetAnalysisByAttemptResultIdsAsync(attemptResultIds);
     
-        var aggregatedResults = attempts.Select(attempt => new AttemptResultWithStatsDto
+        var aggregatedResults = attemptRecords.Select(attempt => new AttemptResultWithStatsDto
         {
             AttemptResult = attempt, 
         
+            ExamAttempt = attempts.FirstOrDefault(a => a.Id.Equals(attempt.AttemptId)),
+            
             BloomAnalytics = bloomStats.FirstOrDefault(b => b.AttemptResultId == attempt.Id)
         }).ToList();
 

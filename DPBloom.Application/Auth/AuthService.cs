@@ -45,8 +45,12 @@ public class AuthService : IAuthService
         newUser.UserName = $"{DateTime.UtcNow.Year}{group}{faculty}{fName}{mName}{lName}";
         
         newUser.Id = Uuid.NewDatabaseFriendly(Database.SqlServer);
-        newUser.CreatedOn = newUser.UpdatedOn = DateTime.UtcNow;
+        newUser.CreatedOn = newUser.UpdatedOn = newUser.FirstLogin = DateTime.UtcNow;
         newUser.UserName = newUser.UserName = $"{DateTime.UtcNow.Year}{group}{faculty}{fName}{mName}{lName}";
+        
+         
+        
+        //Add required fields like first login
 
         return await _userRepository.CreateUserAsync(newUser, user.Password,
             "Student");
@@ -69,6 +73,10 @@ public class AuthService : IAuthService
             Username = userModel.UserName,
             AvatarUrl = userModel.AvatarUrl
         };
+        
+        userModel.LastLogin = DateTime.UtcNow;
+        
+        await _userRepository.UpdateUserAsync(userModel);
 
         return response;
     }

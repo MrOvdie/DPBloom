@@ -39,7 +39,7 @@ public class ExamRepository : RepositoryBase<ExamModel, ExamDao, ApplicationDbCo
             .ThenInclude(q => q.Options)
             .FirstOrDefaultAsync(e => e.Id == examId);
 
-        if (examDao == null) return null;
+        if (examDao is null) return null;
 
         var aggregate = new ExamAggregateModel
         {

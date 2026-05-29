@@ -1,6 +1,4 @@
-﻿using DPBloom.Application.Exam;
-using DPBloom.Application.Exam.Contracts;
-using DPBloom.Application.Lecture;
+﻿using DPBloom.Application.Exam.Contracts;
 using DPBloom.Application.Lecture.Contracts;
 using DPBloom.Application.Topic;
 
@@ -15,5 +13,5 @@ public class CourseAggregateDto
 
     public IReadOnlyList<TopicDto>? Topics { get; set; }
     public IReadOnlyList<LectureDto>? Lectures { get; set; }
-    public IReadOnlyList<ExamDetailsDto>? Exams { get; set; }
+    public IReadOnlyList<ExamRecordDto>? Exams { get; set; }
 }

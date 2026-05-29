@@ -46,7 +46,7 @@ public class AttemptsController : ControllerBase
         catch (KeyNotFoundException ex)
         {
             return NotFound(ex.Message);
-        }
+        } 
     }
 
     [HttpPost("{attemptId:guid}/submit-all")]
@@ -69,6 +69,15 @@ public class AttemptsController : ControllerBase
         {
             return NotFound(ex.Message);
         }
+    }
+
+    [HttpGet("{attemptId:guid}/continue")]
+    [Authorize]
+    public async Task<ActionResult<AttemptDetailsDto>> ContinueAttempt(Guid attemptId)
+    {
+        var result = await _attemptService.ContinueAttemptAsync(attemptId);
+        
+        return Ok(result);
     }
 
     [HttpPost("{attemptId:guid}/finish")]
@@ -95,7 +104,7 @@ public class AttemptsController : ControllerBase
     public async Task<ActionResult<IReadOnlyList<AttemptResultRecordDto>>> GetAttemptResultsByExamAndUserAsync(
         Guid examId, Guid userId)
     {
-        var result = await _attemptService.GetUserExamAttempts(examId, userId);
+        var result = await _attemptService.GetUserExamResultsAttempts(userId, examId);
         
         return Ok(result);
     }
@@ -104,7 +113,7 @@ public class AttemptsController : ControllerBase
     [Authorize]
     public async Task<ActionResult<IReadOnlyList<AttemptResultWithStatsDto>>> GetAttemptsStatsByExamAndUserAsync(Guid examId, Guid userId)
     {
-        var attemptAggregate = await _attemptAggregationService.GetAttemptResultsWithStatisticsByExamByUserAsync(examId, userId);
+        var attemptAggregate = await _attemptAggregationService.GetAttemptResultsWithStatisticsByExamByUserAsync(userId, examId);
         
         return Ok(attemptAggregate);
     }
@@ -131,10 +140,9 @@ public class AttemptsController : ControllerBase
     [Authorize]
     public async Task<ActionResult<AttemptResultDto>> EvaluateManualAnswers(
         Guid attemptResultId,
-        [FromBody] List<TeacherEvaluationDto> evaluations,
-        [FromQuery] Guid examId)
+        [FromBody] List<TeacherEvaluationDto> evaluations)
     {
-        var result = await _attemptService.CheckOpenTextAnswerAsync(attemptResultId, evaluations, examId);
+        var result = await _attemptService.CheckOpenTextAnswerAsync(attemptResultId, evaluations);
 
         return Ok(result);
     }

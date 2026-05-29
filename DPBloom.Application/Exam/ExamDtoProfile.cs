@@ -16,24 +16,6 @@ public class ExamDtoProfile : Profile
         CreateMap<ExamAggregateModel, ExamDetailsDto>()
             .IncludeMembers(src => src.Exam)
             .ForMember(dest => dest.Questions, opt => opt.MapFrom(src => src.Questions));
-            /*.ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Exam.Id))
-            .ForMember(dest => dest.Title, opt => opt.MapFrom(src => src.Exam.Title))
-            .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Exam.Description))
-            .ForMember(dest => dest.CourseId, opt => opt.MapFrom(src => src.Exam.CourseId))
-            .ForMember(dest => dest.AuthorId, opt => opt.MapFrom(src => src.Exam.AuthorId))
-            .ForMember(dest => dest.LastUpdaterId, opt => opt.MapFrom(src => src.Exam.LastUpdaterId))
-            .ForMember(dest => dest.TopicId, opt => opt.MapFrom(src => src.Exam.TopicId))
-            .ForMember(dest => dest.Duration, opt => opt.MapFrom(src => src.Exam.Duration))
-            .ForMember(dest => dest.StartsAt, opt => opt.MapFrom(src => src.Exam.StartsAt))
-            .ForMember(dest => dest.FinishesAt, opt => opt.MapFrom(src => src.Exam.FinishesAt))
-            .ForMember(dest => dest.CanSkip, opt => opt.MapFrom(src => src.Exam.CanSkip))
-            .ForMember(dest => dest.ShowResults, opt => opt.MapFrom(src => src.Exam.ShowResults))
-            .ForMember(dest => dest.IsRandomOrder, opt => opt.MapFrom(src => src.Exam.IsRandomOrder))
-            .ForMember(dest => dest.Questions, opt => opt.MapFrom(src => src.Questions))
-            .ForMember(dest => dest.MinimalPassScore, opt => opt.MapFrom(src => src.Exam.MinimalPassScore))
-            .ForMember(dest => dest.CanCheckAttempts, opt => opt.MapFrom(src => src.Exam.CanCheckAttempts))
-            .ForMember(dest => dest.CreatedOn, opt => opt.MapFrom(src => src.Exam.CreatedOn))
-            .ForMember(dest => dest.UpdatedOn, opt => opt.MapFrom(src => src.Exam.UpdatedOn));*/
 
         CreateMap<QuestionModel, QuestionDto>()
             .ForMember(dest => dest.Options, opt => opt.Ignore());
@@ -58,8 +40,13 @@ public class ExamDtoProfile : Profile
             });
 
         CreateMap<ExamModel, ExamRecordDto>();
+        CreateMap<ExamModel, ExamDetailsDto>();
         
         CreateMap<QuestionResultModel, QuestionResultDto>();
+        
+        CreateMap<UserQuestionAnswerModel, QuestionResultModel>();
+        
+        CreateMap<UserQuestionAnswerModel, SavedAnswerDto>();
 
         CreateMap<AttemptResultModel, AttemptResultRecordDto>();
 

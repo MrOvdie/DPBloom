@@ -44,6 +44,11 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
 
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+});
+
 builder.Services.AddMediatR(cfg => { cfg.RegisterServicesFromAssembly(typeof(CourseService).Assembly); });
 
 // 1. Налаштування бази даних

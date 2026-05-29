@@ -58,12 +58,27 @@ public class ExamService : IExamService
     {
         await EnsureHasAccessToGenericExamContent(examId);
 
-        var exam = await _examRepository.GetWithQuestionsAsync(examId);
-
-        if (exam is null)
+        var examAggregate = await _examRepository.GetWithQuestionsAsync(examId);
+        if (examAggregate is null)
             throw new KeyNotFoundException($"Exam with ID {examId} not found");
+        
+        var dto = _mapper.Map<ExamDetailsDto>(examAggregate.Exam);
 
-        return _mapper.Map<ExamDetailsDto>(exam);
+        dto.Questions = _mapper.Map<List<QuestionDto>>(examAggregate.Questions);
+        
+        foreach (var questionDto in dto.Questions)
+        {
+            if (examAggregate.AnswerOptions is not null)
+            {
+                var optionsForQuestion = examAggregate.AnswerOptions
+                    .Where(o => o.QuestionId == questionDto.Id)
+                    .ToList();
+            
+                questionDto.Options = _mapper.Map<List<OptionDto>>(optionsForQuestion);
+            }
+        }
+        
+        return dto;
     }
 
     public async Task<IReadOnlyList<ExamRecordDto>> GetExamsByCourseAsync(Guid courseId)
@@ -78,7 +93,6 @@ public class ExamService : IExamService
     public async Task<Guid> CreateExamAsync(Guid courseId, CreateExamDto createExam)
     {
         var validationResult = await _createValidator.ValidateAsync(createExam);
-
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
 
@@ -132,7 +146,6 @@ public class ExamService : IExamService
             throw new ValidationException(validationResult.Errors);
         
         var existingExam = await _examRepository.GetWithQuestionsAsync(examId);
-
         if (existingExam is null)
             throw new KeyNotFoundException("Exam not found");
 
@@ -299,7 +312,6 @@ public class ExamService : IExamService
         var currentUserId = _currentUserService.GetUserId();
 
         var teacherId = await _examRepository.IsExamAuthorAsync(examId, currentUserId);
-
         if (teacherId) return;
 
         await EnsureStudentIsEnrolledAsync(examId, currentUserId);

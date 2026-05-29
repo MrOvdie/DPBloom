@@ -31,7 +31,7 @@ public class UserController : ControllerBase
 
         var profile = await _authService.GetUserProfileAsync(userId);
 
-        if (profile == null)
+        if (profile is null)
             return NotFound("Can't find user.");
 
         return Ok(profile);

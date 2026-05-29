@@ -9,6 +9,7 @@ public class CreateExamDto
     public DateTime StartsAt { get; set; }
     public DateTime FinishesAt { get; set; }
     public double? MinimalPassScore { get; set; }
+    public int AttemptsCount { get; set; }
     public bool CanSkip { get; set; }
     public bool ShowResults { get; set; }
     public bool CanCheckAttempts { get; set; }

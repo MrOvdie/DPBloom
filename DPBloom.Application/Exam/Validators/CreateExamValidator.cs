@@ -29,6 +29,9 @@ public class CreateExamValidator : AbstractValidator<CreateExamDto>
 
         RuleFor(ce => ce.FinishesAt)
             .GreaterThan(ce => ce.StartsAt).WithMessage("Exam finish time must be after start time.");
+        
+        RuleFor(ce => ce.AttemptsCount)
+            .InclusiveBetween(1, 100).WithMessage("Attempts count must be between 1 and 100.");
 
         RuleForEach(ce => ce.Questions)
             .SetValidator(new CreateQuestionValidator());

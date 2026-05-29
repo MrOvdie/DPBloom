@@ -9,6 +9,10 @@ public class BloomDtoProfile : Profile
 {
     public BloomDtoProfile()
     {
+        CreateMap<BloomAnalysisModel, BloomAnalysisDto>();
+        CreateMap<BloomLevelPerformance, BloomLevelPerformanceDto>();
+        CreateMap<RecommendedMaterial, RecommendedMaterialDto>();
+        
         CreateMap<RecommendedMaterial, RecommendationDto>();
         CreateMap<RecommendationTemplateModel, RecommendationTemplateDto>();
 

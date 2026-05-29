@@ -1,6 +1,5 @@
 ﻿using AutoMapper;
 using DPBloom.Application.Attempt;
-using DPBloom.Application.Auth;
 using DPBloom.Application.Bloom.Contracts;
 using DPBloom.Application.Exam;
 using DPBloom.Application.Lecture;
@@ -41,11 +40,11 @@ public class BloomService : IBloomService
     public async Task<BloomAnalysisDto> AnalyzeAndSaveAttemptAsync(Guid attemptResultId)
     {
         var attemptResult = await _attemptResultRepository.GetAttemptResultByIdAsync(attemptResultId);
-        if (attemptResult == null)
+        if (attemptResult is null)
             throw new KeyNotFoundException("Attempt result not found.");
 
         var examAggregate = await _examRepository.GetWithQuestionsAsync(attemptResult.ExamId);
-        if (examAggregate == null)
+        if (examAggregate is null)
             throw new KeyNotFoundException("Exam not found.");
 
         var questionsDict = examAggregate.Questions.ToDictionary(q => q.Id, q => q);
@@ -73,9 +72,7 @@ public class BloomService : IBloomService
         var levelPerformanceList = Enum.GetValues<BloomLevel>().Select(level =>
         {
             if (actualResultsDict.TryGetValue(level, out var performance))
-            {
                 return performance;
-            }
 
             return new BloomLevelPerformance
             {
@@ -116,7 +113,7 @@ public class BloomService : IBloomService
                     RelevantBloomLevel = weakLevel,
                     AdviceText = adviceText,
                     MaterialId = matchedLecture?.Id,
-                    Title = matchedLecture?.Title
+                    Title = matchedLecture?.Title ?? "No lecture avaliable"
                 });
             }
         }
@@ -147,7 +144,7 @@ public class BloomService : IBloomService
 
     public async Task<IReadOnlyList<BloomAnalysisDto?>> GetAnalysisByAttemptResultIdsAsync(List<Guid> attemptResultIds)
     {
-        var analysis = await _bloomRepository.GetAsync(bam => attemptResultIds.Contains(bam.AttemptResultId));
+        var analysis = await _bloomRepository.GetAnalysisByAttemptResultIdsAsync(attemptResultIds);
 
         return _mapper.Map<List<BloomAnalysisDto>>(analysis);
     }

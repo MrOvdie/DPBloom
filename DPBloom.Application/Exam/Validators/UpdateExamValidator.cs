@@ -37,6 +37,9 @@ public class UpdateExamValidator : AbstractValidator<UpdateExamDto>
         RuleFor(ce => ce.MinimalPassScore)
             .NotEmpty().When(x => x.MinimalPassScore is not null)
             .InclusiveBetween(0, 100).WithMessage("Minimal pass score must be between 0 and 100.");
+        
+        RuleFor(ce => ce.AttemptsCount)
+            .InclusiveBetween(1, 100).WithMessage("Attempts count must be between 1 and 100.");
 
         RuleForEach(ce => ce.Questions)
             .SetValidator(new UpdateQuestionValidator());

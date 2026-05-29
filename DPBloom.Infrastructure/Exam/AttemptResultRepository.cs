@@ -2,7 +2,6 @@
 using AutoMapper.QueryableExtensions;
 using DPBloom.Application.Attempt;
 using DPBloom.Application.Attempt.Contracts;
-using DPBloom.Application.Exam;
 using DPBloom.Core.Exam;
 using DPBloom.Core.Exam.Enums;
 using DPBloom.Infrastructure.Base;
@@ -11,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DPBloom.Infrastructure.Exam;
 
-public class AttemptResultRepository : RepositoryBase<AttemptResultModel, UserExamAttemptDao, ApplicationDbContext>,
+public class AttemptResultRepository : RepositoryBase<AttemptResultModel, AttemptResultDao, ApplicationDbContext>,
     IAttemptResultRepository
 {
     public AttemptResultRepository(ApplicationDbContext dbContext, IMapper mapper) : base(dbContext, mapper)
@@ -36,6 +35,15 @@ public class AttemptResultRepository : RepositoryBase<AttemptResultModel, UserEx
     {      
         var attemptResultDao = Mapper.Map<AttemptResultDao>(model);
         
+        if (attemptResultDao.Details is not null)
+        {
+            foreach (var detail in attemptResultDao.Details)
+            {
+                detail.AttemptResultId = attemptResultDao.Id;
+                detail.AttemptResult = attemptResultDao;
+            }
+        }
+        
         await DbContext.AttemptResults.AddAsync(attemptResultDao);
 
         await DbContext.SaveChangesAsync();
@@ -58,6 +66,7 @@ public class AttemptResultRepository : RepositoryBase<AttemptResultModel, UserEx
     public async Task<IReadOnlyList<AttemptResultModel>> GetAllAttemptsResultsByUserAsync(Guid userId)
     {
         var attemptsResultsDao = await DbContext.AttemptResults
+            .Include(a => a.Details)
             .Where(ar => ar.UserId.Equals(userId)).ToListAsync();
 
         return Mapper.Map<List<AttemptResultModel>>(attemptsResultsDao);

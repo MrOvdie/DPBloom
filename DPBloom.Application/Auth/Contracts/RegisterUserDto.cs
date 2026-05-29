@@ -9,4 +9,6 @@ public class RegisterUserDto
     public string LastName { get; set; } = string.Empty;
     public string? Group { get; set; } 
     public string? Faculty { get; set; } 
+    public DateTime? EnteringDate { get; set; }
+    public DateTime? GraduationDate { get; set; }
 }

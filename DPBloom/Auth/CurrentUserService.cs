@@ -37,7 +37,7 @@ public class CurrentUserService : ICurrentUserService
     var userClaims = _httpContextAccessor.HttpContext?.User?.Claims;
     
     return userClaims?.Any(c => 
-        c.Type == "user_role" && // Обов'язково перевіряємо ТИП
+        c.QuestionType == "user_role" && // Обов'язково перевіряємо ТИП
         c.Value == "Admin"       // І тільки потім ЗНАЧЕННЯ
     ) ?? false;
 }*/

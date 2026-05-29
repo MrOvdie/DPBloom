@@ -1,6 +1,5 @@
 ﻿using AutoMapper;
 using DPBloom.Application.Attempt.Contracts;
-using DPBloom.Application.Exam;
 using DPBloom.Application.Exam.Contracts;
 using DPBloom.Core.Exam;
 
@@ -16,8 +15,9 @@ public class ExamDaoProfile : Profile
             .ForMember(dest => dest.DeletedOn, opt => opt.Ignore())
             .ReverseMap();
 
-        // From DAO to Domain
-        // CreateMap<ExamDao, ExamModel>();
+        CreateMap<UserExamAttemptModel, UserExamAttemptDao>().ReverseMap();
+        CreateMap<UserExamAttemptDao, ExamAttemptDto>();
+        CreateMap<UserQuestionAnswerModel, UserQuestionAnswerDao>().ReverseMap();
 
         CreateMap<QuestionModel, QuestionDao>()
             .ForMember(dest => dest.Exam, opt => opt.Ignore())
@@ -35,15 +35,13 @@ public class ExamDaoProfile : Profile
         
         CreateMap<AttemptResultModel, AttemptResultDao>().ReverseMap();
         
-        CreateMap<AttemptResultDao, AttemptResultRecordDto>()
-            .ForMember(dest => dest.StartedAt, opt => opt.MapFrom(src => src.Attempt.StartedAt))
-            .ForMember(dest => dest.FinishedAt, opt => opt.MapFrom(src => src.Attempt.FinishedAt));
-        
         CreateMap<AttemptResultDao, AttemptResultDto>()
             .ForMember(dest => dest.StartedAt, opt => opt.MapFrom(src => src.Attempt.StartedAt))
             .ForMember(dest => dest.FinishedAt, opt => opt.MapFrom(src => src.Attempt.FinishedAt));
         
         CreateMap<UserExamAttemptDao, AttemptResultModel>().ReverseMap();
+
+        CreateMap<ExamDao, ExamRecordDto>();
 
         //CreateMap<AnswerOptionDao, AnswerOptionModel>();
         /*CreateMap<ExamModel, ExamDao>().ReverseMap();
@@ -57,12 +55,12 @@ public class ExamDaoProfile : Profile
         CreateMap<UserQuestionAnswerModel, UserQuestionAnswerDao>().ReverseMap();
 
         CreateMap<QuestionModel, QuestionDao>()
-            .ForMember(dest => dest.Type, opt => opt.MapFrom(src => (int)src.Type))
+            .ForMember(dest => dest.QuestionType, opt => opt.MapFrom(src => (int)src.QuestionType))
             .ForMember(dest => dest.Level, opt => opt.MapFrom(src => (int)src.Level))
             .ForMember(dest => dest.CheckingType, opt => opt.MapFrom(src => (int)src.CheckingType));
 
         CreateMap<QuestionDao, QuestionModel>()
-            .ForMember(dest => dest.Type, opt => opt.MapFrom(src => (Type)src.Type))
+            .ForMember(dest => dest.QuestionType, opt => opt.MapFrom(src => (QuestionType)src.QuestionType))
             .ForMember(dest => dest.Level, opt => opt.MapFrom(src => (Level)src.Level))
             .ForMember(dest => dest.CheckingType, opt => opt.MapFrom(src => (CheckingType)src.CheckingType));
 

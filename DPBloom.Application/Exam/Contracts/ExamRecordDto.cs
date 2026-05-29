@@ -1,8 +1,9 @@
-﻿namespace DPBloom.Application.Exam.Contracts;
+﻿using DPBloom.Application.Base;
 
-public class ExamRecordDto
+namespace DPBloom.Application.Exam.Contracts;
+
+public class ExamRecordDto : ModelBase<Guid>
 {
-    public Guid Id { get; set; }
     public string Title { get; set; }
     public string? Description { get; set; }
     public Guid CourseId { get; set; }
@@ -12,5 +13,7 @@ public class ExamRecordDto
     public TimeSpan Duration { get; set; }
     public DateTime StartsAt { get; set; }
     public DateTime FinishesAt { get; set; }
+    public double MinimalPassScore { get; set; }
+    public int AttemptsCount { get; set; }
     public bool CanCheckAttempts { get; set; }
 }

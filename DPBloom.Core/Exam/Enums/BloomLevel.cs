@@ -2,10 +2,10 @@
 
 public enum BloomLevel
 {
-    Evaluating,
-    Creating, 
-    Analyzing,
-    Applying,
+    Knowing,
     Understanding,
-    Knowing
+    Applying,
+    Analyzing,
+    Creating, 
+    Evaluating,
 }

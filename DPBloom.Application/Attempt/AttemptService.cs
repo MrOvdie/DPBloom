@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using DPBloom.Application.Attempt.Contracts;
 using DPBloom.Application.Auth;
+using DPBloom.Application.Bloom;
 using DPBloom.Application.Enrollment;
 using DPBloom.Application.Exam;
 using DPBloom.Application.Exam.Contracts;
@@ -8,7 +9,6 @@ using DPBloom.Core.Exam;
 using DPBloom.Core.Exam.Enums;
 using FluentValidation;
 using UUIDNext;
-using Type = DPBloom.Core.Exam.Enums.Type;
 
 namespace DPBloom.Application.Attempt;
 
@@ -21,18 +21,20 @@ public class AttemptService : IAttemptService
     private readonly IEnrollmentRepository _enrollmentRepository;
     private readonly IValidator<SubmitAnswerDto> _submitAnswerValidator;
     private readonly IValidator<TeacherEvaluationDto> _teacherEvaluationValidator;
+    private readonly IBloomService _bloomService;
     private readonly IMapper _mapper;
 
     public AttemptService(IAttemptRepository attemptRepository, IMapper mapper, IExamRepository examRepository,
         IAttemptResultRepository attemptResultRepository,
         ICurrentUserService currentUserService, IEnrollmentRepository enrollmentRepository,
-        IValidator<SubmitAnswerDto> submitAnswerValidator, IValidator<TeacherEvaluationDto> teacherEvaluationValidator)
+        IValidator<SubmitAnswerDto> submitAnswerValidator, IValidator<TeacherEvaluationDto> teacherEvaluationValidator, IBloomService bloomService)
     {
         _attemptResultRepository = attemptResultRepository;
         _currentUserService = currentUserService;
         _enrollmentRepository = enrollmentRepository;
         _submitAnswerValidator = submitAnswerValidator;
         _teacherEvaluationValidator = teacherEvaluationValidator;
+        _bloomService = bloomService;
         _attemptRepository = attemptRepository;
         _examRepository = examRepository;
         _mapper = mapper;
@@ -40,14 +42,21 @@ public class AttemptService : IAttemptService
 
     public async Task<Guid> StartAsync(Guid examId)
     {
-        var exam = await _examRepository.GetWithQuestionsAsync(examId); //Check this
+        var exam = await _examRepository.GetWithQuestionsAsync(examId);
 
         if (exam.Exam.StartsAt > DateTime.UtcNow || exam.Exam.FinishesAt < DateTime.UtcNow)
             throw new InvalidOperationException("Exam is not available for start");
 
         var userId = _currentUserService.GetUserId();
 
-        await EnrollmentCheck(exam.Exam.CourseId, userId); //Check this
+        await EnrollmentCheck(exam.Exam.CourseId, userId);
+
+        var activeAttemptId = await _attemptRepository.GetActiveAttemptIdAsync(userId, examId);
+    
+        if (activeAttemptId.HasValue)
+        {
+            return activeAttemptId.Value;
+        }
 
         var userAttempt = new UserExamAttemptModel
         {
@@ -60,6 +69,7 @@ public class AttemptService : IAttemptService
             CreatedOn = DateTime.UtcNow,
             UpdatedOn = DateTime.UtcNow,
         };
+    
         var startedModel = await _attemptRepository.StartAsync(userAttempt);
 
         return startedModel.Id;
@@ -76,10 +86,28 @@ public class AttemptService : IAttemptService
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
 
-        var answerModel = _mapper.Map<UserQuestionAnswerModel>(answer);
-        answerModel.AttemptId = attemptId;
+        var existingAnswer = await _attemptRepository.GetAnswerAsync(attemptId, answer.QuestionId);
 
-        await _attemptRepository.SubmitAnswerAsync(attemptId, answerModel);
+        if (existingAnswer is not null)
+        {
+            existingAnswer.SelectedOptionIds = answer.SelectedOptionIds;
+            existingAnswer.FreeTextAnswer = answer.FreeTextAnswer;
+            existingAnswer.UpdatedOn = DateTime.UtcNow;
+            existingAnswer.SubmittedAt = DateTime.UtcNow;
+        
+            await _attemptRepository.UpdateAnswerAsync(existingAnswer);
+        }
+        else
+        {
+            var newAnswer = _mapper.Map<UserQuestionAnswerModel>(answer);
+            newAnswer.Id = Uuid.NewDatabaseFriendly(Database.SqlServer);
+            newAnswer.AttemptId = attemptId;
+            newAnswer.CreatedOn = DateTime.UtcNow;
+            newAnswer.UpdatedOn = DateTime.UtcNow;
+            newAnswer.SubmittedAt = DateTime.UtcNow;
+        
+            await _attemptRepository.AddAnswerAsync(newAnswer);
+        }
     }
 
     public async Task SaveAllAnswersAsync(Guid attemptId, List<SubmitAnswerDto> answers)
@@ -89,21 +117,81 @@ public class AttemptService : IAttemptService
         await ValidateAttemptAccessAndStatusAsync(userId, attemptId);
 
         var validationResults = await Task.WhenAll(answers.Select(a => _submitAnswerValidator.ValidateAsync(a)));
-
         if (!validationResults.All(r => r.IsValid))
             throw new ValidationException(validationResults.SelectMany(r => r.Errors));
 
-        var answerModels = _mapper.Map<List<UserQuestionAnswerModel>>(answers);
+        var existingAnswers = await _attemptRepository.GetAnswersByAttemptIdAsync(attemptId);
+    
+        var answersToAdd = new List<UserQuestionAnswerModel>();
+        var answersToUpdate = new List<UserQuestionAnswerModel>();
 
-        foreach (var answerModel in answerModels)
+        foreach (var answerDto in answers)
         {
-            answerModel.Id = Uuid.NewDatabaseFriendly(Database.SqlServer);
-            answerModel.AttemptId = attemptId;
-            answerModel.CreatedOn = answerModel.UpdatedOn = DateTime.UtcNow;
-            answerModel.SubmittedAt = DateTime.UtcNow;
+            var existingAnswer = existingAnswers.FirstOrDefault(a => a.QuestionId == answerDto.QuestionId);
+
+            if (existingAnswer is not null)
+            {
+                existingAnswer.SelectedOptionIds = answerDto.SelectedOptionIds;
+                existingAnswer.FreeTextAnswer = answerDto.FreeTextAnswer;
+                existingAnswer.UpdatedOn = DateTime.UtcNow;
+                existingAnswer.SubmittedAt = DateTime.UtcNow;
+            
+                answersToUpdate.Add(existingAnswer);
+            }
+            else
+            {
+                var newAnswer = _mapper.Map<UserQuestionAnswerModel>(answerDto);
+                newAnswer.Id = Uuid.NewDatabaseFriendly(Database.SqlServer);
+                newAnswer.AttemptId = attemptId;
+                newAnswer.CreatedOn = DateTime.UtcNow;
+                newAnswer.UpdatedOn = DateTime.UtcNow;
+                newAnswer.SubmittedAt = DateTime.UtcNow;
+
+                answersToAdd.Add(newAnswer);
+            }
         }
 
-        await _attemptRepository.SaveAllAnswersAsync(attemptId, answerModels);
+        await _attemptRepository.SaveAnswersBatchAsync(answersToAdd, answersToUpdate);
+    }
+
+    public async Task<AttemptDetailsDto> ContinueAttemptAsync(Guid attemptId)
+    {
+        var attempt = await _attemptRepository.GetByIdAsync(attemptId);
+        if (attempt is null)
+            throw new KeyNotFoundException($"Can't find attempt with Id {attemptId}.");
+        if (attempt.Status is not AttemptStatus.InProgress)
+            throw new InvalidOperationException("This attempt cannot be continued.");
+
+        var exam = await _examRepository.GetWithQuestionsAsync(attempt.ExamId); 
+
+        var savedAnswers = await _attemptRepository.GetAnswersByAttemptIdAsync(attemptId);
+
+        var allAttempts = await _attemptRepository.GetAttemptsByUserByExamIdAsync(attempt.UserId, attempt.ExamId);
+        var attemptCount = allAttempts.Count(a => a.UserId == attempt.UserId && a.ExamId == attempt.ExamId && a.StartedAt <= attempt.StartedAt);
+        
+        var attemptDto = new AttemptDetailsDto
+        {
+            Id = attempt.Id,
+            ExamId = attempt.ExamId,
+            ExamTitle = exam.Exam.Title,
+            ExamDescription = exam.Exam.Description,
+            StartedAt = attempt.StartedAt,
+            Duration = exam.Exam.Duration,
+            AttemptNumber = attemptCount,
+        
+            Questions = _mapper.Map<List<QuestionDto>>(exam.Questions),
+        
+            SavedAnswers = _mapper.Map<List<SavedAnswerDto>>(savedAnswers)
+        };
+        
+        foreach (var questionDto in attemptDto.Questions)
+        {
+            var optionsForThisQuestion = exam.AnswerOptions.Where(o => o.QuestionId == questionDto.Id);
+    
+            questionDto.Options = _mapper.Map<List<OptionDto>>(optionsForThisQuestion);
+        }
+
+        return attemptDto;
     }
 
     public async Task<AttemptResultDto> FinishAsync(Guid attemptId)
@@ -113,14 +201,10 @@ public class AttemptService : IAttemptService
         var attempt = await ValidateAttemptAccessAndStatusAsync(userId, attemptId);
 
         if (attempt.Status is AttemptStatus.Submitted or AttemptStatus.Expired)
-        {
             return await GetResultAsync(attemptId);
-        }
 
         if (attempt.Status is not AttemptStatus.InProgress)
-        {
             throw new InvalidOperationException("This attempt cannot be finished.");
-        }
 
         var exam = await _examRepository.GetWithQuestionsAsync(attempt.ExamId);
 
@@ -144,8 +228,8 @@ public class AttemptService : IAttemptService
         if (attempt is null)
             throw new KeyNotFoundException($"Can't find attempt with id {attemptId}.");
 
-        if (attempt.Status is not AttemptStatus.Submitted and not AttemptStatus.Expired)
-            throw new InvalidOperationException("This attempt isn't finished.");
+        /*if (attempt.Status is not AttemptStatus.Submitted and not AttemptStatus.Expired)
+            throw new InvalidOperationException("This attempt isn't finished.");*/
 
         var attemptResultId = attempt.AttemptResultId;
 
@@ -218,6 +302,7 @@ public class AttemptService : IAttemptService
             AttemptId = attempt.Id,
             ExamId = exam.Exam.Id,
             CourseId = exam.Exam.CourseId,
+            UserId = attempt.UserId,
             TotalQuestions = exam.Questions.Count,
             Details = [],
             CreatedOn = DateTime.UtcNow,
@@ -233,6 +318,8 @@ public class AttemptService : IAttemptService
             if (question.CheckingType == CheckingType.Automatic)
             {
                 questionReview = await CheckCorrectAnswersForQuestionAsync(attempt.Id, question.Id, exam);
+                questionReview.AttemptId = attempt.Id;
+                questionReview.AttemptResultId = result.Id;
             }
             else
             {
@@ -243,37 +330,53 @@ public class AttemptService : IAttemptService
                     questionReview = new QuestionResultModel
                     {
                         Id = Uuid.NewDatabaseFriendly(Database.SqlServer),
+                        AttemptId = attempt.Id,
+                        AttemptResultId = result.Id,
                         QuestionId = question.Id,
                         Text = question.Text,
                         SelectedOptionIds = new List<Guid>(),
                         CorrectOptionIds = new List<Guid>(),
                         Score = 0,
+                        MaxScore = question.ScoreWeight,
                         IsCorrect = false,
-                        QuestionResultStatus = AttemptStatus.PendingManualReview
+                        QuestionResultStatus = AttemptStatus.PendingManualReview,
                     };
                 }
                 else
                 {
                     questionReview = _mapper.Map<QuestionResultModel>(manualReview);
+                    
+                    questionReview.AttemptResultId = result.Id;
+                    questionReview.AttemptId = attempt.Id; 
+                    questionReview.MaxScore = question.ScoreWeight;
+        
+                    questionReview.QuestionResultStatus = AttemptStatus.PendingManualReview;
                 }
             }
 
             result.Details.Add(questionReview);
         }
-
+        
+        result.EvaluatedOn = DateTime.UtcNow;
+        result.MaxScore = result.Details.Sum(d => d.MaxScore);
+        
         var (updatedResult, hasPending) = UpdateAttemptResultMetrics(result, exam);
 
         await _attemptResultRepository.SaveAttemptResultAsync(attempt.Id, updatedResult);
 
         attempt.AttemptResultId = updatedResult.Id;
         attempt.Status = hasPending ? AttemptStatus.PendingManualReview : AttemptStatus.Checked;
+        
 
         await _attemptRepository.UpdateAsync(attempt);
+        
+        if (!hasPending)
+            await _bloomService.AnalyzeAndSaveAttemptAsync(updatedResult.Id);
 
         return updatedResult;
     }
 
-    private async Task<QuestionResultModel> CheckCorrectAnswersForQuestionAsync(Guid attemptId, Guid questionId,
+    private async Task<QuestionResultModel> CheckCorrectAnswersForQuestionAsync(Guid attemptId,/* Guid attemptResultId,*/ Guid questionId,
         ExamAggregateModel exam)
     {
         var question = exam.Questions.SingleOrDefault(q => q.Id.Equals(questionId));
@@ -281,7 +384,7 @@ public class AttemptService : IAttemptService
             throw new InvalidOperationException($"Question {questionId} not found in exam.");
 
         var userAnswers = await _examRepository.GetUserAnswersForQuestionAsync(attemptId, questionId);
-        var selectedOptionIds = userAnswers.SelectMany(ua => ua.SelectedOptionIds).ToList();
+        var selectedOptionIds = userAnswers.SelectMany(ua => ua.SelectedOptionIds).Distinct().ToList();
 
         var correctOptions = exam.AnswerOptions
             .Where(ao => ao.QuestionId.Equals(questionId) && ao.IsCorrect)
@@ -296,20 +399,21 @@ public class AttemptService : IAttemptService
             Text = question.Text,
             SelectedOptionIds = selectedOptionIds,
             CorrectOptionIds = correctOptionIds,
+            MaxScore = question.ScoreWeight,
             Score = 0,
             CreatedOn = DateTime.UtcNow,
             UpdatedOn = DateTime.UtcNow,
         };
 
-        switch (question.Type)
+        switch (question.QuestionType)
         {
-            case Type.SingleChoice:
+            case QuestionType.SingleChoice:
                 result.IsCorrect = selectedOptionIds.Count == 1 &&
                                    selectedOptionIds.First() == correctOptionIds.First();
                 result.Score = result.IsCorrect ? question.ScoreWeight : 0;
                 break;
 
-            case Type.MultipleChoice:
+            case QuestionType.MultipleChoice:
                 var correctCount = correctOptionIds.Count;
                 var weightPerCorrect = question.ScoreWeight / correctCount;
 
@@ -329,7 +433,7 @@ public class AttemptService : IAttemptService
                 result.IsCorrect = isFullyCorrect;
                 break;
 
-            case Type.OpenAnswer:
+            case QuestionType.OpenAnswer:
                 var userText = userAnswers.FirstOrDefault()?.FreeTextAnswer?.Trim();
 
                 var isMatch = correctOptions.Any(ao =>
@@ -344,8 +448,7 @@ public class AttemptService : IAttemptService
     }
 
     public async Task<AttemptResultDto> CheckOpenTextAnswerAsync(Guid attemptResultId,
-        IReadOnlyList<TeacherEvaluationDto> teacherEvaluations,
-        Guid examId)
+        IReadOnlyList<TeacherEvaluationDto> teacherEvaluations)
     {
         var validationResults =
             await Task.WhenAll(teacherEvaluations
@@ -358,6 +461,8 @@ public class AttemptService : IAttemptService
         if (attemptResult is null)
             throw new KeyNotFoundException($"Can't find attempt result with id {attemptResultId}.");
 
+        var examId = attemptResult.ExamId;
+        
         var exam = await _examRepository.GetWithQuestionsAsync(examId);
         if (exam is null)
             throw new KeyNotFoundException($"Can't find exam with id {examId}.");
@@ -384,6 +489,8 @@ public class AttemptService : IAttemptService
         }
 
         var (updatedResult, hasPending) = UpdateAttemptResultMetrics(attemptResult, exam);
+        
+        updatedResult.EvaluatedOn = DateTime.UtcNow;
 
         await _attemptResultRepository.UpdateAsync(updatedResult);
 
@@ -394,9 +501,10 @@ public class AttemptService : IAttemptService
             {
                 attempt.Status = AttemptStatus.Checked;
                 await _attemptRepository.UpdateAsync(attempt);
+                await _bloomService.AnalyzeAndSaveAttemptAsync(attemptResultId);
             }
         }
-
+        
         return _mapper.Map<AttemptResultDto>(updatedResult);
     }
 
@@ -416,7 +524,7 @@ public class AttemptService : IAttemptService
         return _mapper.Map<List<AttemptResultRecordDto>>(manualAttemptResults);
     }
 
-    public async Task<IReadOnlyList<AttemptResultRecordDto>> GetUserExamAttempts(Guid userId, Guid examId)
+    public async Task<IReadOnlyList<AttemptResultRecordDto>> GetUserExamResultsAttempts(Guid userId, Guid examId)
     {
         await EnsureUserHasAccessToUserAttemptsAsync(userId, examId);
 
@@ -425,6 +533,14 @@ public class AttemptService : IAttemptService
         return _mapper.Map<List<AttemptResultRecordDto>>(attempts);
     }
 
+    public async Task<IReadOnlyList<ExamAttemptDto>> GetUserExamAttempts(Guid userId, Guid examId)
+    {
+        await EnsureUserHasAccessToUserAttemptsAsync(userId, examId);
+
+        var attempts = await _attemptRepository.GetAttemptsByUserByExamIdAsync(userId, examId);
+
+        return _mapper.Map<List<ExamAttemptDto>>(attempts);
+    }
 
     private async Task EnsureUserHasAccessToAttemptResultAsync(Guid attemptResultId)
     {
@@ -530,6 +646,7 @@ public class AttemptService : IAttemptService
         attemptResult.Passed = !hasPending &&
                                (exam.Exam.MinimalPassScore is null ||
                                 attemptResult.Score >= exam.Exam.MinimalPassScore.Value);
+        
 
         attemptResult.UpdatedOn = DateTime.UtcNow;
 

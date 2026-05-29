@@ -1,11 +1,12 @@
 ﻿using DPBloom.Infrastructure.Base;
 using DPBloom.Infrastructure.Course;
 using DPBloom.Infrastructure.Data;
+using DPBloom.Infrastructure.Extensions;
 using DPBloom.Infrastructure.User;
 
 namespace DPBloom.Infrastructure.Exam;
 
-public class AttemptResultDao : EntityDaoBase<Guid>
+public class AttemptResultDao : EntityDaoBase<Guid>, ISoftDelete
 {
     public Guid AttemptId { get; set; }
     public Guid ExamId { get; set; }
@@ -18,6 +19,8 @@ public class AttemptResultDao : EntityDaoBase<Guid>
     public double Score { get; set; }
     public double MaxScore { get; set; }
     public double ScorePercentage { get; set; }
+    
+    public DateTime EvaluatedOn { get; set; }
 
     public bool Passed { get; set; }
 
@@ -26,4 +29,7 @@ public class AttemptResultDao : EntityDaoBase<Guid>
     public ExamDao Exam { get; set; }
     public CourseDao Course { get; set; }
     public ApplicationUser User { get; set; }
+    
+    public bool IsDeleted { get; set; }
+    public DateTime? DeletedOn { get; set; }
 }

@@ -39,4 +39,15 @@ public class BloomRepository : RepositoryBase<BloomAnalysisModel, BloomAnalysisD
        
        return Mapper.Map<BloomAnalysisModel>(analysisDao);
     }
+
+    public async Task<IReadOnlyList<BloomAnalysisModel>> GetAnalysisByAttemptResultIdsAsync(List<Guid> attemptResultIds)
+    {
+        var analyses = await DbContext.BloomAnalyses
+            .Include(a => a.PerformanceByLevel)
+            .Include(a => a.Recommendations)
+            .Where(a => attemptResultIds.Contains(a.AttemptResultId))
+            .ToListAsync();
+        
+        return Mapper.Map<IReadOnlyList<BloomAnalysisModel>>(analyses);
+    }
 }

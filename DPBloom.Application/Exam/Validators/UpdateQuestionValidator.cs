@@ -14,14 +14,19 @@ public class UpdateQuestionValidator : AbstractValidator<UpdateQuestionDto>
             .MaximumLength(500).WithMessage("Question text cannot be longer than 500 characters.");
 
         RuleFor(q => q.Type)
-            .InclusiveBetween(0, 5).WithMessage("Invalid question type."); //TODO: make proper ranges
+            .IsInEnum().WithMessage("Invalid question type."); //TODO: make proper ranges
 
         RuleFor(q => q.Level)
-            .InclusiveBetween(0, 6).WithMessage("Invalid Bloom's taxonomy level.");
+            .IsInEnum().WithMessage("Invalid Bloom's taxonomy level.");
 
         RuleFor(q => q.CheckingType)
-            .InclusiveBetween(0, 2).WithMessage("Invalid checking type.");
+            .IsInEnum().WithMessage("Invalid checking type.");
 
+        RuleFor(q => q.Options)
+            .NotEmpty().WithMessage("Question must have options.")
+            .Must(options => options == null || options.Count >= 2)
+            .WithMessage("At least 2 options are required for a choice-based question.");
+        
         RuleForEach(q => q.Options)
             .SetValidator(new UpdateOptionValidator());
     }

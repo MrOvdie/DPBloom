@@ -54,9 +54,9 @@ public class UserService : IUserService
             dashboardData.AverageExamCompletion = Math.Round(totalCompletionSum / enrolledCourseIds.Count, 2);
         }
 
-        var allUserAttempts = await _attemptResultRepository.GetAllAttemptsResultsByUserAsync(userId);
+        var allUserAttemptsResults = await _attemptResultRepository.GetAllAttemptsResultsByUserAsync(userId);
 
-        if (allUserAttempts is null || !allUserAttempts.Any())
+        if (allUserAttemptsResults is null || !allUserAttemptsResults.Any())
         {
             dashboardData.BloomPerformance = Enum.GetValues<BloomLevel>()
                 .Select(level => new BloomLevelPerformanceDto { Level = level, ScorePercentage = 0 })
@@ -65,7 +65,7 @@ public class UserService : IUserService
             return dashboardData;
         }
 
-        var examIds = allUserAttempts.Select(a => a.ExamId).Distinct().ToList();
+        var examIds = allUserAttemptsResults.Select(a => a.ExamId).Distinct().ToList();
         var allQuestionsDict = new Dictionary<Guid, QuestionModel>();
 
         foreach (var examId in examIds)
@@ -80,7 +80,7 @@ public class UserService : IUserService
             }
         }
 
-        var actualPerformanceDict = allUserAttempts
+        var actualPerformanceDict = allUserAttemptsResults
             .SelectMany(a => a.Details)
             .Where(d => allQuestionsDict.ContainsKey(d.QuestionId))
             .GroupBy(d => allQuestionsDict[d.QuestionId].Level)

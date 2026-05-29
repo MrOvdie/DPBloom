@@ -1,6 +1,6 @@
 ﻿namespace DPBloom.Core.Exam.Enums;
 
-public enum Type
+public enum QuestionType
 {
     SingleChoice,
     MultipleChoice,

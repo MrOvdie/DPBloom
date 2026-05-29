@@ -1,4 +1,5 @@
-﻿using DPBloom.Core.Exam;
+﻿using System.Text.Json;
+using DPBloom.Core.Exam;
 using DPBloom.Infrastructure.Bloom;
 using DPBloom.Infrastructure.Course;
 using DPBloom.Infrastructure.Exam;
@@ -110,6 +111,19 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
             .WithMany()
             .HasForeignKey(ua => ua.AttemptId)
             .OnDelete(DeleteBehavior.Restrict);
+        
+        builder.Entity<UserQuestionAnswerDao>()
+            .HasOne(a => a.Attempt)
+            .WithMany(e => e.Answers)
+            .HasForeignKey(a => a.AttemptId)
+            .OnDelete(DeleteBehavior.Cascade);
+        
+        builder.Entity<UserQuestionAnswerDao>()
+            .Property(x => x.SelectedOptionIds)
+            .HasConversion(
+                v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null),
+                v => JsonSerializer.Deserialize<List<Guid>>(v, (JsonSerializerOptions)null)
+            );
 
 
         builder.Entity<UserExamAttemptDao>()
