@@ -1,6 +1,6 @@
 ﻿namespace DPBloom.Application.Lecture.Contracts;
 
-public class CreateLecture
+public class CreateLectureDto
 {
     public string Title { get; set; }
     public string? Description { get; set; }

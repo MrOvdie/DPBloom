@@ -15,13 +15,13 @@ public class LectureService : ILectureService
     private readonly IEnrollmentRepository _enrollmentRepository;
     private readonly ITopicRepository _topicRepository;
     private readonly IMapper _mapper;
-    private readonly IValidator<CreateLecture> _createValidator;
-    private readonly IValidator<UpdateLecture> _updateValidator;
+    private readonly IValidator<CreateLectureDto> _createValidator;
+    private readonly IValidator<UpdateLectureDto> _updateValidator;
     private readonly ICurrentUserService _currentUserService;
 
 
     public LectureService(ILectureRepository lectureRepository, IMapper mapper,
-        IValidator<CreateLecture> createValidator, IValidator<UpdateLecture> updateValidator,
+        IValidator<CreateLectureDto> createValidator, IValidator<UpdateLectureDto> updateValidator,
         ICurrentUserService currentUserService, IEnrollmentRepository enrollmentRepository,
         ITopicRepository topicRepository)
     {
@@ -107,18 +107,18 @@ public class LectureService : ILectureService
         return _mapper.Map<List<LectureDto>>(lectures);
     }
 
-    public async Task<LectureDetailsDto> CreateAsync(Guid courseId, CreateLecture createLecture)
+    public async Task<LectureDetailsDto> CreateAsync(Guid courseId, CreateLectureDto createLectureDto)
     {
-        var validationResult = await _createValidator.ValidateAsync(createLecture);
+        var validationResult = await _createValidator.ValidateAsync(createLectureDto);
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
 
         if (await _lectureRepository.ExistsAsync(l =>
-                l.Title == createLecture.Title && l.CourseId.Equals(courseId)))
+                l.Title == createLectureDto.Title && l.CourseId.Equals(courseId)))
             throw new InvalidOperationException(
-                $"Lecture with name {createLecture.Title} already exists in this course");
+                $"Lecture with name {createLectureDto.Title} already exists in this course");
 
-        var createLectureModel = _mapper.Map<LectureModel>(createLecture);
+        var createLectureModel = _mapper.Map<LectureModel>(createLectureDto);
         createLectureModel.Id = Uuid.NewDatabaseFriendly(Database.SqlServer);
         createLectureModel.CreatedOn = createLectureModel.UpdatedOn = DateTime.UtcNow;
         createLectureModel.AuthorId = createLectureModel.LastUpdaterId = _currentUserService.GetUserId();
@@ -129,9 +129,9 @@ public class LectureService : ILectureService
         return _mapper.Map<LectureDetailsDto>(createdLecture);
     }
 
-    public async Task<LectureDetailsDto> UpdateAsync(Guid lectureId, UpdateLecture updateLecture)
+    public async Task<LectureDetailsDto> UpdateAsync(Guid lectureId, UpdateLectureDto updateLectureDto)
     {
-        var validationResult = await _updateValidator.ValidateAsync(updateLecture);
+        var validationResult = await _updateValidator.ValidateAsync(updateLectureDto);
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
 
@@ -139,11 +139,11 @@ public class LectureService : ILectureService
 
         var existingLecture = await GetEntityByIdAsync(lectureId);
 
-        updateLecture.CourseId ??= existingLecture.CourseId;
+        updateLectureDto.CourseId ??= existingLecture.CourseId;
 
-        updateLecture.TopicId ??= existingLecture.TopicId;
+        updateLectureDto.TopicId ??= existingLecture.TopicId;
 
-        var updatedExistedLectureModel = _mapper.Map(updateLecture, existingLecture);
+        var updatedExistedLectureModel = _mapper.Map(updateLectureDto, existingLecture);
         updatedExistedLectureModel.UpdatedOn = DateTime.UtcNow;
         updatedExistedLectureModel.LastUpdaterId = _currentUserService.GetUserId();
 

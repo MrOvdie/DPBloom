@@ -73,7 +73,7 @@ public class LectureController : ControllerBase
 
     [HttpPost("{courseId:guid}")]
     [Authorize(Roles = "Teacher, Admin")]
-    public async Task<ActionResult<LectureDetailsDto>> Create(Guid courseId, [FromBody] CreateLecture request)
+    public async Task<ActionResult<LectureDetailsDto>> Create(Guid courseId, [FromBody] CreateLectureDto request)
     {
         var lectureDto = await _lectureService.CreateAsync(courseId, request);
         return CreatedAtAction(nameof(GetById), new { id = lectureDto.Id }, lectureDto);
@@ -81,7 +81,7 @@ public class LectureController : ControllerBase
 
     [HttpPut("{id:guid}")]
     [Authorize(Roles = "Teacher, Admin")]
-    public async Task<ActionResult<LectureDetailsDto>> Update(Guid id, [FromBody] UpdateLecture request)
+    public async Task<ActionResult<LectureDetailsDto>> Update(Guid id, [FromBody] UpdateLectureDto request)
     {
         var result = await _lectureService.UpdateAsync(id, request);
         return Ok(result);

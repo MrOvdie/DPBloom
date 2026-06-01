@@ -42,6 +42,15 @@ public class ExamDtoProfile : Profile
         CreateMap<ExamModel, ExamRecordDto>();
         CreateMap<ExamModel, ExamDetailsDto>();
         
+        CreateMap<AnswerOptionModel, OptionDto>();
+        
+        CreateMap<UserExamAttemptAggregateModel, AttemptDetailsDto>()
+            .IncludeMembers(src => src.Attempt)
+            .ForMember(dest => dest.Questions, opt => opt.MapFrom(src => src.Questions))
+            .ForMember(dest => dest.SavedAnswers, opt => opt.MapFrom(src => src.Answers));
+
+        CreateMap<UserExamAttemptModel, AttemptDetailsDto>();
+        
         CreateMap<QuestionResultModel, QuestionResultDto>();
         
         CreateMap<UserQuestionAnswerModel, QuestionResultModel>();

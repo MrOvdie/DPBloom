@@ -63,14 +63,24 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
             .HasOne(c => c.LastUpdater)
             .WithMany()
             .HasForeignKey(c => c.LastUpdaterId)
-            .OnDelete(DeleteBehavior.Restrict);
+            .OnDelete(DeleteBehavior.Restrict); 
+        
+        builder.Entity<CourseDao>()
+            .HasIndex(e => e.Title)
+            .IsUnique()
+            .HasFilter("[IsDeleted] = 0");
 
 
         builder.Entity<TopicDao>()
             .HasOne(t => t.Author)
             .WithMany()
             .HasForeignKey(t => t.AuthorId)
-            .OnDelete(DeleteBehavior.Restrict);
+            .OnDelete(DeleteBehavior.Restrict); 
+        
+        builder.Entity<TopicDao>()
+            .HasIndex(e => new { e.CourseId, e.Title })
+            .IsUnique()
+            .HasFilter("[IsDeleted] = 0");
 
 
         builder.Entity<ExamDao>()
@@ -78,6 +88,10 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
             .WithMany()
             .HasForeignKey(e => e.AuthorId)
             .OnDelete(DeleteBehavior.Restrict);
+        builder.Entity<ExamDao>()
+            .HasIndex(e => new { e.CourseId, e.Title, e.TopicId })
+            .IsUnique()
+            .HasFilter("[IsDeleted] = 0");
 
 
         builder.Entity<LectureDao>()
@@ -85,6 +99,11 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
             .WithMany()
             .HasForeignKey(l => l.AuthorId)
             .OnDelete(DeleteBehavior.Restrict);
+        
+        builder.Entity<LectureDao>()
+            .HasIndex(e => new { e.CourseId, e.Title, e.TopicId })
+            .IsUnique()
+            .HasFilter("[IsDeleted] = 0");
 
 
         builder.Entity<AttemptResultDao>()

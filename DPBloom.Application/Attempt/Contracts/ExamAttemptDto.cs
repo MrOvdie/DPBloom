@@ -9,6 +9,10 @@ public class ExamAttemptDto
     public Guid CourseId { get; set; }
     public Guid? AttemptResultId { get; set; }
     public Guid UserId { get; set; }
+    public string FirstName { get; set; }
+    public string? MiddleName { get; set; }
+    public string LastName { get; set; }
+    public string? UserGroup { get; set; }
     public AttemptStatus Status { get; set; }
     public DateTime StartedAt { get; set; }
     public DateTime FinishedAt { get; set; }

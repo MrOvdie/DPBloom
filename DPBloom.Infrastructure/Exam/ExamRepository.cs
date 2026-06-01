@@ -113,7 +113,12 @@ public class ExamRepository : RepositoryBase<ExamModel, ExamDao, ApplicationDbCo
     public async Task DeleteExamWithDetailsAsync(ExamAggregateModel model)
     {
         var examDao = MapExamAggregateToDao(model);
-        examDao.DeleteAggregate();
+
+        DbContext.ChangeTracker.Clear();
+
+        examDao.DeleteExamAggregate();
+    
+        DbContext.Exams.Update(examDao);
         await DbContext.SaveChangesAsync();
     }
 

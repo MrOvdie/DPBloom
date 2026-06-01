@@ -92,9 +92,9 @@ public class AttemptsController : ControllerBase
     }
 
     [HttpGet("{attemptId:guid}/result")]
-    public async Task<ActionResult<AttemptResultDto>> GetAttemptResultWithStats(Guid attemptId)
+    public async Task<ActionResult<AttemptOverviewAggregateDto>> GetAttemptOverview(Guid attemptId)
     {
-       var result =  await _attemptService.GetResultAsync(attemptId);
+       var result =  await _attemptService.GetResultOverviewAsync(attemptId);
        
        return Ok(result);
     }
@@ -129,20 +129,31 @@ public class AttemptsController : ControllerBase
 
     [HttpGet("{examId:guid}/exam-results")]
     [Authorize(Policy = "RequireTeacherPrivileges")]
-    public async Task<ActionResult<IReadOnlyList<AttemptResultRecordDto>>> GetAttemptResultsByExamAsync(Guid examId)
+    public async Task<ActionResult<IReadOnlyList<AttemptResultWithStatsDto>>> GetAttemptResultsByExamAsync(Guid examId)
     {
-        var result = await _attemptService.GetAttemptResultsByExamAsync(examId);
+        var result = await _attemptAggregationService.GetAttemptResultsWithStatisticsByExamAsync(examId);
 
         return Ok(result);
     }
 
-    [HttpPost("review/{attemptResultId:guid}")]
+    [HttpPost("review-many/{attemptResultId:guid}")]
     [Authorize]
     public async Task<ActionResult<AttemptResultDto>> EvaluateManualAnswers(
         Guid attemptResultId,
         [FromBody] List<TeacherEvaluationDto> evaluations)
     {
-        var result = await _attemptService.CheckOpenTextAnswerAsync(attemptResultId, evaluations);
+        var result = await _attemptService.CheckOpenTextAnswersAsync(attemptResultId, evaluations);
+
+        return Ok(result);
+    }
+    
+    [HttpPost("review/{attemptResultId:guid}")]
+    [Authorize]
+    public async Task<ActionResult<AttemptResultDto>> EvaluateManualAnswer(
+        Guid attemptResultId,
+        [FromBody] TeacherEvaluationDto evaluation)
+    {
+        var result = await _attemptService.CheckOpenTextAnswerAsync(attemptResultId, evaluation);
 
         return Ok(result);
     }

@@ -1,6 +1,7 @@
 ﻿using DPBloom.Application.Auth;
 using DPBloom.Application.Auth.Contracts;
 using DPBloom.Application.User;
+using DPBloom.Application.User.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

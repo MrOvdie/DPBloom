@@ -12,8 +12,8 @@ public class LectureDtoProfile : Profile
         CreateMap<LectureModel, LectureDto>();
         CreateMap<LectureModel, LectureDetailsDto>().ReverseMap();
 
-        CreateMap<CreateLecture, LectureModel>();
-        CreateMap<UpdateLecture, LectureModel>()
+        CreateMap<CreateLectureDto, LectureModel>();
+        CreateMap<UpdateLectureDto, LectureModel>()
             .ForAllMembers(opt => 
                 opt.Condition((_, _, srcMember) => 
                     srcMember is not null));

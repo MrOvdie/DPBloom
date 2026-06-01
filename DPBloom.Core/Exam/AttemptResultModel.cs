@@ -15,6 +15,7 @@ public class AttemptResultModel : EntityBase<Guid>
     public double Score { get; set; }
     public double MaxScore { get; set; }
     public double ScorePercentage { get; set; }
+    public TimeSpan? Duration { get; set; }
     public DateTime EvaluatedOn { get; set; }
 
     public bool Passed { get; set; }

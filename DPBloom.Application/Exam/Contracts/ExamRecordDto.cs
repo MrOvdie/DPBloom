@@ -1,4 +1,5 @@
 ﻿using DPBloom.Application.Base;
+using DPBloom.Core.Exam.Enums;
 
 namespace DPBloom.Application.Exam.Contracts;
 
@@ -15,5 +16,6 @@ public class ExamRecordDto : ModelBase<Guid>
     public DateTime FinishesAt { get; set; }
     public double MinimalPassScore { get; set; }
     public int AttemptsCount { get; set; }
+    public EvaluationStrategy EvaluationStrategy { get; set; }
     public bool CanCheckAttempts { get; set; }
 }

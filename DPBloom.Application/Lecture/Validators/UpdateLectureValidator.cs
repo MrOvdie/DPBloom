@@ -3,7 +3,7 @@ using FluentValidation;
 
 namespace DPBloom.Application.Lecture.Validators;
 
-public class UpdateLectureValidator : AbstractValidator<UpdateLecture>
+public class UpdateLectureValidator : AbstractValidator<UpdateLectureDto>
 {
     public UpdateLectureValidator()
     {

@@ -37,7 +37,7 @@ public class RecommendationsTemplateController : ControllerBase
 
     [HttpPost]
     [Authorize(Roles = "Admin")]
-    public async Task<ActionResult<RecommendationTemplateDto>> Create([FromBody] CreateRecommendationTemplate request)
+    public async Task<ActionResult<RecommendationTemplateDto>> Create([FromBody] CreateRecommendationTemplateDto request)
     {
         var result = await _recommendationTemplateService.CreateAsync(request);
         
@@ -46,7 +46,7 @@ public class RecommendationsTemplateController : ControllerBase
     
     [HttpPut("{id:guid}")]
     [Authorize(Roles = "Admin")]
-    public async Task<ActionResult<RecommendationTemplateDto>> Create(Guid id, [FromBody] UpdateRecommendationTemplate request)
+    public async Task<ActionResult<RecommendationTemplateDto>> Create(Guid id, [FromBody] UpdateRecommendationTemplateDto request)
     {
         var result = await _recommendationTemplateService.UpdateAsync(id, request);
         

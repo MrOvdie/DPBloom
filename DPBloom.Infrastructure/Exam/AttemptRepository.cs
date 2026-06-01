@@ -178,14 +178,15 @@ public class AttemptRepository : RepositoryBase<UserExamAttemptModel, UserExamAt
 
         await DbContext.SaveChangesAsync();
     }
-    
+
     public async Task<UserExamAttemptModel?> GetAttemptWithFullDetailsAsync(Guid attemptId)
     {
         var attemptDao = await DbContext.UserExamAttempts
-            .AsNoTracking() 
+            .AsNoTracking()
+            .AsSplitQuery()
             .Include(a => a.Exam)
             .ThenInclude(e => e.Questions)
-            .ThenInclude(q => q.Options) 
+            .ThenInclude(q => q.Options)
             .Include(a => a.Answers)
             .FirstOrDefaultAsync(a => a.Id == attemptId);
 
@@ -201,7 +202,7 @@ public class AttemptRepository : RepositoryBase<UserExamAttemptModel, UserExamAt
 
         return Mapper.Map<List<UserQuestionAnswerModel>>(answersDao);
     }
-    
+
     public async Task<UserQuestionAnswerModel?> GetAnswerAsync(Guid attemptId, Guid questionId)
     {
         var dao = await DbContext.UserAnswers
@@ -229,16 +230,17 @@ public class AttemptRepository : RepositoryBase<UserExamAttemptModel, UserExamAt
     {
         var activeAttemptId = await DbContext.UserExamAttempts
             .AsNoTracking()
-            .Where(a => a.UserId == userId 
-                        && a.ExamId == examId 
+            .Where(a => a.UserId == userId
+                        && a.ExamId == examId
                         && a.Status == AttemptStatus.InProgress)
             .Select(a => a.Id)
             .FirstOrDefaultAsync();
 
         return activeAttemptId == Guid.Empty ? null : activeAttemptId;
     }
-    
-    public async Task SaveAnswersBatchAsync(List<UserQuestionAnswerModel> newAnswers, List<UserQuestionAnswerModel> existingAnswersToUpdate)
+
+    public async Task SaveAnswersBatchAsync(List<UserQuestionAnswerModel> newAnswers,
+        List<UserQuestionAnswerModel> existingAnswersToUpdate)
     {
         if (newAnswers.Any())
         {
@@ -253,5 +255,39 @@ public class AttemptRepository : RepositoryBase<UserExamAttemptModel, UserExamAt
         }
 
         await DbContext.SaveChangesAsync();
+    }
+    
+    public async Task<UserExamAttemptAggregateModel?> GetAttemptAggregateAsync(Guid attemptId)
+    {
+        var attemptDao = await DbContext.UserExamAttempts
+            .AsNoTracking()
+            .AsSplitQuery()
+            .Include(a => a.Exam)
+            .ThenInclude(e => e.Questions)
+            .ThenInclude(q => q.Options)
+            .Include(a => a.Answers)
+            .FirstOrDefaultAsync(a => a.Id == attemptId);
+
+        if (attemptDao == null) return null;
+
+        return new UserExamAttemptAggregateModel
+        {
+            Attempt = Mapper.Map<UserExamAttemptModel>(attemptDao),
+        
+            Exam = attemptDao.Exam is not null ? Mapper.Map<ExamModel>(attemptDao.Exam) : null,
+            Questions = attemptDao.Exam != null ? Mapper.Map<List<QuestionModel>>(attemptDao.Exam.Questions) : [],
+        
+            Answers = Mapper.Map<List<UserQuestionAnswerModel>>(attemptDao.Answers)
+        };
+    }
+
+    public async Task<int> GetAttemptCountAsync(Guid attemptId)
+    {
+        var attempt = await DbContext.UserExamAttempts.FirstOrDefaultAsync(uea => uea.Id == attemptId);
+
+        var count = DbContext.UserExamAttempts.Count(a =>
+            a.UserId == attempt.UserId && a.ExamId == attempt.ExamId && a.StartedAt <= attempt.StartedAt);
+        
+        return count;
     }
 }

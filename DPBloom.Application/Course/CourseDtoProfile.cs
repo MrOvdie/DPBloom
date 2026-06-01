@@ -10,8 +10,8 @@ public class CourseDtoProfile : Profile
     public CourseDtoProfile()
     {
         CreateMap<CourseDto, CourseModel>().ReverseMap();
-        CreateMap<CreateCourse, CourseModel>();
-        CreateMap<UpdateCourse, CourseModel>()
+        CreateMap<CreateCourseDto, CourseModel>();
+        CreateMap<UpdateCourseDto, CourseModel>()
             .ForAllMembers(opt =>
                 opt.Condition((_, _, srcMember) =>
                     srcMember is not null));

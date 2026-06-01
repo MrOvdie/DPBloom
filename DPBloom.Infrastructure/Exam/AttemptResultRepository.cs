@@ -138,4 +138,13 @@ public class AttemptResultRepository : RepositoryBase<AttemptResultModel, Attemp
             .ProjectTo<AttemptResultRecordDto>(Mapper.ConfigurationProvider) 
             .FirstOrDefaultAsync();
     }
+    
+    public async Task<AttemptResultModel> GetByIdWithDetailsAsync(Guid id)
+    {
+        var attemptResult =  await DbContext.AttemptResults
+            .Include(r => r.Details)
+            .FirstOrDefaultAsync(r => r.Id == id);
+        
+        return Mapper.Map<AttemptResultModel>(attemptResult);
+    }
 }

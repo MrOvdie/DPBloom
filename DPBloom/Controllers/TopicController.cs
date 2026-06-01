@@ -65,7 +65,7 @@ public class TopicController : ControllerBase
 
     [HttpPost("{courseId:guid}")]
     [Authorize(Roles = "Teacher, Admin")]
-    public async Task<ActionResult<TopicDto>> Create(Guid courseId, [FromBody] CreateTopic request)
+    public async Task<ActionResult<TopicDto>> Create(Guid courseId, [FromBody] CreateTopicDto request)
     {
         var topicDto = await _topicService.CreateAsync(courseId, request);
         
@@ -74,7 +74,7 @@ public class TopicController : ControllerBase
 
     [HttpPut("{id:guid}")]
     [Authorize(Roles = "Teacher, Admin")]
-    public async Task<ActionResult<TopicDto>> Update(Guid id, [FromBody] UpdateTopic request)
+    public async Task<ActionResult<TopicDto>> Update(Guid id, [FromBody] UpdateTopicDto request)
     {
         var result = await _topicService.UpdateAsync(id, request);
        

@@ -1,4 +1,5 @@
-﻿using DPBloom.Application.Attempt;
+﻿using AutoMapper;
+using DPBloom.Application.Attempt;
 using DPBloom.Application.Auth;
 using DPBloom.Application.Bloom.Contracts;
 using DPBloom.Application.Course;
@@ -7,12 +8,15 @@ using DPBloom.Application.Exam;
 using DPBloom.Application.User.Contracts;
 using DPBloom.Core.Exam;
 using DPBloom.Core.Exam.Enums;
+using Microsoft.EntityFrameworkCore;
 
 namespace DPBloom.Application.User;
 
 public class UserService : IUserService
 {
     private readonly ICurrentUserService _currentUserService;
+    private readonly IUserRepository _userRepository;
+    private readonly IMapper _mapper;
     private readonly IExamRepository _examRepository;
     private readonly IAttemptResultRepository _attemptResultRepository;
     private readonly IEnrollmentRepository _enrollmentRepository;
@@ -21,13 +25,51 @@ public class UserService : IUserService
 
     public UserService(ICurrentUserService currentUserService, IExamRepository examRepository,
         IAttemptResultRepository attemptResultRepository, ICourseService coureseService,
-        IEnrollmentRepository enrollmentRepository)
+        IEnrollmentRepository enrollmentRepository, IUserRepository userRepository, IMapper mapper)
     {
         _currentUserService = currentUserService;
         _examRepository = examRepository;
         _attemptResultRepository = attemptResultRepository;
         _courseService = coureseService;
         _enrollmentRepository = enrollmentRepository;
+        _userRepository = userRepository;
+        _mapper = mapper;
+    }
+
+    public async Task<UserProfileDto?> GetUserProfileAsync(Guid userId)
+    {
+        var userModel = await _userRepository.GetUserByIdAsync(userId);
+
+        if (userModel is null) return null;
+
+        var roles = (await _userRepository.GetUserClaimsAsync(userId))
+            .Select(c => c.Value)
+            .ToList();
+
+        var profileDto = _mapper.Map<UserProfileDto>(userModel);
+
+        profileDto.Roles = roles;
+
+        return profileDto;
+    }
+
+    public async Task<IReadOnlyList<UserBaseInformationDto>> GetUserBaseInformationByIdsAsync(List<Guid> userIds)
+    {
+        if (userIds is null || userIds.Count == 0)
+            return new List<UserBaseInformationDto>();
+
+        var uniqueUserIds = userIds.Distinct().ToList();
+
+        var users = await _userRepository.GetUsersByIdsAsync(uniqueUserIds);
+
+        return _mapper.Map<List<UserBaseInformationDto>>(users);
+    }
+    
+    public async Task<UserBaseInformationDto> GetUserBaseInformationByIdAsync(Guid userId)
+    {
+        var user = await _userRepository.GetUserByIdAsync(userId);
+
+        return _mapper.Map<UserBaseInformationDto>(user);
     }
 
     public async Task<GlobalUserDashboardDto> GetGlobalUserDashboardStatisticsAsync(Guid userId)

@@ -9,7 +9,7 @@ public class QuestionModel : EntityBase<Guid>
     public Guid ExamId { get; set; }
     public int? Position { get; set; }
     public double ScoreWeight { get; set; }
-    public QuestionType QuestionType { get; set; }
+    public QuestionType Type { get; set; }
     public BloomLevel Level { get; set; }
     public CheckingType CheckingType { get; set; }
 }

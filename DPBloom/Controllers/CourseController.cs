@@ -78,7 +78,7 @@ public class CourseController : ControllerBase
 
     [HttpPost]
     [Authorize(Policy = "RequireTeacherPrivileges")]
-    public async Task<ActionResult<CourseDto>> Create([FromBody] CreateCourse request)
+    public async Task<ActionResult<CourseDto>> Create([FromBody] CreateCourseDto request)
     {
         var courseDto = await _courseService.CreateCurseAsync(request);
         
@@ -87,7 +87,7 @@ public class CourseController : ControllerBase
 
     [HttpPut("{id:guid}")]
     [Authorize(Policy = "RequireTeacherPrivileges")]
-    public async Task<ActionResult<CourseDto>> Update(Guid id, [FromBody] UpdateCourse request)
+    public async Task<ActionResult<CourseDto>> Update(Guid id, [FromBody] UpdateCourseDto request)
     {
         var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
         var authorId = Guid.Parse(userIdString);

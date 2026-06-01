@@ -3,7 +3,7 @@ using FluentValidation;
 
 namespace DPBloom.Application.Topic.Validators;
 
-public class UpdateTopicValidator : AbstractValidator<UpdateTopic>
+public class UpdateTopicValidator : AbstractValidator<UpdateTopicDto>
 {
     public UpdateTopicValidator()
     {

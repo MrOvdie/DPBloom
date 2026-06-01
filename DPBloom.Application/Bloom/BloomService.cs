@@ -104,16 +104,19 @@ public class BloomService : IBloomService
             foreach (var weakLevel in weakLevels)
             {
                 var template = textTemplates.FirstOrDefault(t => t.TargetLevel == weakLevel);
-                var adviceText = template != null ? template.AdviceText : "Recommended to read more about this topic.";
+                var adviceText = template is not null ? template.AdviceText : "Recommended to read more about this topic.";
 
                 var matchedLecture = lectures.FirstOrDefault(l => l.TargetBloomLevel == weakLevel);
 
                 recommendations.Add(new RecommendedMaterial
                 {
+                    Id = Uuid.NewDatabaseFriendly(Database.SqlServer),
                     RelevantBloomLevel = weakLevel,
                     AdviceText = adviceText,
                     MaterialId = matchedLecture?.Id,
-                    Title = matchedLecture?.Title ?? "No lecture avaliable"
+                    Title = matchedLecture?.Title ?? "No lecture avaliable",
+                    CreatedOn = DateTime.UtcNow,
+                    UpdatedOn = DateTime.UtcNow
                 });
             }
         }

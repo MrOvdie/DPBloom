@@ -1,8 +1,9 @@
-﻿using DPBloom.Core.Exam.Enums;
+﻿using DPBloom.Core.Base;
+using DPBloom.Core.Exam.Enums;
 
 namespace DPBloom.Core.Bloom;
 
-public class RecommendedMaterial
+public class RecommendedMaterial : EntityBase<Guid>
 {
     public Guid? MaterialId { get; set; }
     public Guid? TopicId { get; set; }

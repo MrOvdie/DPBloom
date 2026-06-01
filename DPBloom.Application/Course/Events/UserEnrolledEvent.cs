@@ -3,4 +3,4 @@ using MediatR;
 
 namespace DPBloom.Application.Course.Events;
 
-public record UserEnrolledEvent(CreateEnrollment CreateEnrollment) : INotification;
+public record UserEnrolledEvent(CreateEnrollmentDto CreateEnrollmentDto) : INotification;

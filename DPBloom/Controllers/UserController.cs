@@ -12,12 +12,10 @@ namespace DPBloom.Controllers;
 [Authorize]
 public class UserController : ControllerBase
 {
-    private readonly IAuthService _authService;
     private readonly IUserService _userService;
 
-    public UserController(IAuthService authService, IUserService userService)
+    public UserController(IUserService userService)
     {
-        _authService = authService;
         _userService = userService;
     }
 
@@ -29,7 +27,7 @@ public class UserController : ControllerBase
         if (!Guid.TryParse(userIdString, out var userId))
             return Unauthorized();
 
-        var profile = await _authService.GetUserProfileAsync(userId);
+        var profile = await _userService.GetUserProfileAsync(userId);
 
         if (profile is null)
             return NotFound("Can't find user.");
@@ -53,5 +51,14 @@ public class UserController : ControllerBase
         var results = await _userService.GetGlobalUserDashboardStatisticsAsync(userId);
         
         return Ok(results);
+    }
+
+    [HttpGet("base-info{userId:guid}")]
+    [Authorize(Policy = "RequireTeacherPrivileges")]
+    public async Task<ActionResult<UserBaseInformationDto>> GetUserBaseInformationByIdsAsync(Guid userId)
+    {
+        var result = await _userService.GetUserBaseInformationByIdAsync(userId);
+
+        return Ok(result);
     }
 }

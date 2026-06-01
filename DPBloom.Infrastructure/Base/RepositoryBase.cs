@@ -150,7 +150,18 @@ public class RepositoryBase<TModel, TDao, TContext> : IRepository<TModel>
 
     public async Task<TModel> UpdateAsync(TModel entity)
     {
-        //TODO: check, if it working correctly
+        var dao = Mapper.Map<TDao>(entity);
+
+        DbContext.ChangeTracker.Clear();
+
+        DbContext.Set<TDao>().Update(dao);
+
+        await DbContext.SaveChangesAsync();
+
+        return Mapper.Map<TModel>(dao);
+        
+        /*//TODO: check, if it working correctly
+        
         var existingDao = await DbContext.Set<TDao>().FindAsync(entity.Id); 
         
         if (existingDao is null)
@@ -162,7 +173,7 @@ public class RepositoryBase<TModel, TDao, TContext> : IRepository<TModel>
     
         await DbContext.SaveChangesAsync();
     
-        return Mapper.Map<TModel>(existingDao);
+        return Mapper.Map<TModel>(existingDao);*/
     }
 
     public async Task DeleteAsync(Guid id)

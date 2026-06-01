@@ -2,7 +2,7 @@
 
 namespace DPBloom.Application.Enrollment.Contracts;
 
-public class CreateEnrollment
+public class CreateEnrollmentDto
 {
     public Guid UserId { get; set; }
     public Guid CourseId { get; set; }

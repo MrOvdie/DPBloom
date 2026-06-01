@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using DPBloom.Application.Auth.Contracts;
 using DPBloom.Application.User;
+using DPBloom.Application.User.Contracts;
 using DPBloom.Core.User;
 using FluentValidation;
 using Microsoft.AspNetCore.Identity;
@@ -48,10 +49,6 @@ public class AuthService : IAuthService
         newUser.CreatedOn = newUser.UpdatedOn = newUser.FirstLogin = DateTime.UtcNow;
         newUser.UserName = newUser.UserName = $"{DateTime.UtcNow.Year}{group}{faculty}{fName}{mName}{lName}";
         
-         
-        
-        //Add required fields like first login
-
         return await _userRepository.CreateUserAsync(newUser, user.Password,
             "Student");
     }
@@ -111,22 +108,5 @@ public class AuthService : IAuthService
         user.UpdatedOn = DateTime.UtcNow;
 
         await _userRepository.UpdateUserAsync(user);
-    }
-
-    public async Task<UserProfileDto?> GetUserProfileAsync(Guid userId)
-    {
-        var userModel = await _userRepository.GetUserByIdAsync(userId);
-
-        if (userModel is null) return null;
-
-        var roles = (await _userRepository.GetUserClaimsAsync(userId))
-            .Select(c => c.Value)
-            .ToList();
-
-        var profileDto = _mapper.Map<UserProfileDto>(userModel);
-
-        profileDto.Roles = roles;
-
-        return profileDto;
     }
 }

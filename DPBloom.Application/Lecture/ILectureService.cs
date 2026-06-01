@@ -11,6 +11,6 @@ public interface ILectureService : ICrud<LectureDto>
     Task<IReadOnlyList<LectureDto>> GetLecturesByCourseAsync(Guid courseId);
     Task<IReadOnlyList<LectureDto>> GetLecturesByTopicAsync(Guid topicId);
     Task<IReadOnlyList<LectureDto>> GetLectureByAuthorAsync(Guid authorId);
-    Task<LectureDetailsDto> CreateAsync(Guid courseId, CreateLecture createLecture);
-    Task<LectureDetailsDto> UpdateAsync(Guid lectureId, UpdateLecture updateLecture);
+    Task<LectureDetailsDto> CreateAsync(Guid courseId, CreateLectureDto createLectureDto);
+    Task<LectureDetailsDto> UpdateAsync(Guid lectureId, UpdateLectureDto updateLectureDto);
 }

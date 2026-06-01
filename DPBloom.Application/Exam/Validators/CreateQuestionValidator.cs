@@ -1,4 +1,5 @@
 ﻿using DPBloom.Application.Exam.Contracts.Create;
+using DPBloom.Core.Exam.Enums;
 using FluentValidation;
 
 namespace DPBloom.Application.Exam.Validators;
@@ -22,10 +23,12 @@ public class CreateQuestionValidator : AbstractValidator<CreateQuestionDto>
 
         RuleFor(q => q.Options)
             .NotEmpty().WithMessage("Question must have options.")
-            .Must(options => options == null || options.Count >= 2)
+            .Must(options => options is not { Count: < 2 })
+            .Unless(q => q.Type == QuestionType.OpenAnswer)
             .WithMessage("At least 2 options are required for a choice-based question.");
         
         RuleForEach(q => q.Options)
-            .SetValidator(new CreateOptionValidator());
+            .SetValidator(new CreateOptionValidator())
+            .When(q => q.CheckingType == CheckingType.Automatic);
     }
 }

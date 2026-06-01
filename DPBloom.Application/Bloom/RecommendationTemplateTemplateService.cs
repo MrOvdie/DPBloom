@@ -34,9 +34,9 @@ public class RecommendationTemplateTemplateService : IRecommendationTemplateServ
         return _mapper.Map<RecommendationTemplateDto>(recommendation);
     }
 
-    public async Task<RecommendationTemplateDto> CreateAsync(CreateRecommendationTemplate createTemplate)
+    public async Task<RecommendationTemplateDto> CreateAsync(CreateRecommendationTemplateDto createTemplateDto)
     {
-        var createTemplateModel = _mapper.Map<RecommendationTemplateModel>(createTemplate);
+        var createTemplateModel = _mapper.Map<RecommendationTemplateModel>(createTemplateDto);
         createTemplateModel.Id = Uuid.NewDatabaseFriendly(Database.SqlServer);
         createTemplateModel.CreatedOn = createTemplateModel.UpdatedOn = DateTime.UtcNow;
 
@@ -45,13 +45,13 @@ public class RecommendationTemplateTemplateService : IRecommendationTemplateServ
         return _mapper.Map<RecommendationTemplateDto>(createTemplateModel);
     }
 
-    public async Task<RecommendationTemplateDto> UpdateAsync(Guid id, UpdateRecommendationTemplate updateTemplate)
+    public async Task<RecommendationTemplateDto> UpdateAsync(Guid id, UpdateRecommendationTemplateDto updateTemplateDto)
     {
         var existingRecommendation = await _recommendationTemplateRepository.GetByIdAsync(id);
         if (existingRecommendation is null)
             throw new KeyNotFoundException("Recommendation not found");
 
-        var updatedRecommendationTemplateModel = _mapper.Map(updateTemplate, existingRecommendation);
+        var updatedRecommendationTemplateModel = _mapper.Map(updateTemplateDto, existingRecommendation);
         updatedRecommendationTemplateModel.UpdatedOn = DateTime.UtcNow;
 
         await _recommendationTemplateRepository.UpdateAsync(existingRecommendation);

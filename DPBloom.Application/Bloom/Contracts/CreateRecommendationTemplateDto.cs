@@ -2,7 +2,7 @@
 
 namespace DPBloom.Application.Bloom.Contracts;
 
-public class CreateRecommendationTemplate
+public class CreateRecommendationTemplateDto
 {
     public BloomLevel TargetLevel { get; set; } 
     public string AdviceText { get; set; }

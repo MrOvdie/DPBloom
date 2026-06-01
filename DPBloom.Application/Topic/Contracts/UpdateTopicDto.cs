@@ -1,6 +1,6 @@
 ﻿namespace DPBloom.Application.Topic.Contracts;
 
-public class UpdateTopic
+public class UpdateTopicDto
 {
     public string? Title { get; set; }
     public string? Description { get; set; }

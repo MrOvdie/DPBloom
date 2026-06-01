@@ -3,7 +3,7 @@ using FluentValidation;
 
 namespace DPBloom.Application.Course.Validators;
 
-public class CreateCourseValidator : AbstractValidator<CreateCourse>
+public class CreateCourseValidator : AbstractValidator<CreateCourseDto>
 {
     public CreateCourseValidator()
     {

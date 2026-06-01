@@ -40,7 +40,39 @@ public class AttemptAggregationService : IAttemptAggregationService
 
         return aggregatedResults;
     }
+
+    public async Task<IReadOnlyList<AttemptResultWithStatsDto>> GetAttemptResultsWithStatisticsByExamAsync(Guid examId)
+    {
+        var attemptRecords = await _attemptService.GetAttemptResultsByExamAsync(examId);
+        if (attemptRecords is null || !attemptRecords.Any())
+            return [];
+
+        var attempts = await _attemptService.GetExamAttempts(examId);
+
+        var bestAttemptsData = attemptRecords
+            .Join(attempts, 
+                result => result.AttemptId, 
+                attempt => attempt.Id, 
+                (result, attempt) => new { AttemptResult = result, ExamAttempt = attempt })
+            .GroupBy(x => x.ExamAttempt.UserId)
+            .Select(group => group.OrderByDescending(x => x.AttemptResult.Score).First())
+            .ToList();
     
+        var bestAttemptResultIds = bestAttemptsData.Select(x => x.AttemptResult.Id).ToList();
+    
+        var bloomStats = await _bloomService.GetAnalysisByAttemptResultIdsAsync(bestAttemptResultIds);
+
+        var aggregatedResults = bestAttemptsData.Select(data => new AttemptResultWithStatsDto
+        {
+            AttemptResult = data.AttemptResult, 
+            ExamAttempt = data.ExamAttempt,
+        
+            BloomAnalytics = bloomStats.FirstOrDefault(b => b.AttemptResultId == data.AttemptResult.Id)
+        }).ToList();
+
+        return aggregatedResults;
+    }
+
     public async Task<AttemptResultWithStatsDto> GetAttemptResultsWithStatisticsByIdAsync(Guid attemptResultId)
     {
         var attemptResult = await _attemptService.GetResultRecordAsync(attemptResultId);

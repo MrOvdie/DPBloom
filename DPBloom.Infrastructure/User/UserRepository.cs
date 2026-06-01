@@ -3,6 +3,7 @@ using AutoMapper;
 using DPBloom.Application.Auth;
 using DPBloom.Core.User;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace DPBloom.Infrastructure.User;
 
@@ -96,5 +97,15 @@ public class UserRepository : IUserRepository
         var appUser = await _userManager.FindByIdAsync(userId.ToString());
 
         return _mapper.Map<UserModel>(appUser);
+    }
+
+    public async Task<IReadOnlyList<UserModel?>> GetUsersByIdsAsync(List<Guid> userIds)
+    {
+        var users = await _userManager.Users
+            .AsNoTracking()
+            .Where(u => userIds.Contains(u.Id))
+            .ToListAsync();
+        
+        return _mapper.Map<List<UserModel>>(users);
     }
 }

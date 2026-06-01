@@ -10,4 +10,5 @@ public interface IUserRepository
     Task<bool> CreateUserAsync(UserModel user, string password, string initialRole);
     Task<bool> UpdateUserAsync(UserModel user);
     Task<UserModel?> GetUserByIdAsync(Guid userId);
+    Task<IReadOnlyList<UserModel?>> GetUsersByIdsAsync(List<Guid> userIds);
 }

@@ -3,7 +3,7 @@ using FluentValidation;
 
 namespace DPBloom.Application.Enrollment.Validators;
 
-public class UpdateEnrollmentValidator : AbstractValidator<UpdateEnrollment>
+public class UpdateEnrollmentValidator : AbstractValidator<UpdateEnrollmentDto>
 {
     public UpdateEnrollmentValidator()
     {

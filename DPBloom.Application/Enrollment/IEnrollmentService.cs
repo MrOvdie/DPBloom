@@ -5,8 +5,8 @@ namespace DPBloom.Application.Enrollment;
 
 public interface IEnrollmentService
 {
-    public Task CreateAsync(CreateEnrollment createEnrollment);
-    public Task<UserEnrollmentDto> UpdateAsync(Guid enrollmentId, UpdateEnrollment updateEnrollment);
+    public Task CreateAsync(CreateEnrollmentDto createEnrollmentDto);
+    public Task<UserEnrollmentDto> UpdateAsync(Guid enrollmentId, UpdateEnrollmentDto updateEnrollmentDto);
     public Task<UserEnrollmentDto> DeleteUserEnrollmentAsync(Guid enrollmentId);
     public Task<UserEnrollmentDto> RestoreUserEnrollmentAsync(Guid enrollmentId);
     public Task<UserEnrollmentModel> GetEntityByIdAsync(Guid enrollmentId);

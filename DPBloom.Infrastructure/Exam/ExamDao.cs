@@ -1,4 +1,5 @@
-﻿using DPBloom.Infrastructure.Base;
+﻿using DPBloom.Core.Exam.Enums;
+using DPBloom.Infrastructure.Base;
 using DPBloom.Infrastructure.Course;
 using DPBloom.Infrastructure.Extensions;
 using DPBloom.Infrastructure.Topic;
@@ -20,6 +21,7 @@ public class ExamDao : EntityDaoBase<Guid>, ISoftDelete
     public double? MinimalPassScore { get; set; }
     public double MaximumScore { get; set; }
     public int AttemptsCount { get; set; }
+    public EvaluationStrategy EvaluationStrategy { get; set; }
     public bool CanSkip { get; set; }
     public bool ShowResults { get; set; }
     public bool? CanCheckAttempts { get; set; }

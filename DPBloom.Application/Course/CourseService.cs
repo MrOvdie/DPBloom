@@ -18,8 +18,8 @@ public class CourseService : ICourseService
 {
     private readonly IAttemptResultRepository _attemptResultRepository;
     private readonly ICourseRepository _courseRepository;
-    private readonly IValidator<CreateCourse> _createCourseValidator;
-    private readonly IValidator<UpdateCourse> _updateCourseValidator;
+    private readonly IValidator<CreateCourseDto> _createCourseValidator;
+    private readonly IValidator<UpdateCourseDto> _updateCourseValidator;
     private readonly ICurrentUserService _currentUserService;
     private readonly IEnrollmentRepository _enrollmentRepository;
     private readonly IExamRepository _examRepository;
@@ -28,7 +28,7 @@ public class CourseService : ICourseService
     private readonly IUserRepository _userRepository;
 
     public CourseService(ICourseRepository courseRepository, IMapper mapper,
-        IValidator<CreateCourse> createCourseValidator, IValidator<UpdateCourse> updateCourseValidator,
+        IValidator<CreateCourseDto> createCourseValidator, IValidator<UpdateCourseDto> updateCourseValidator,
         ICurrentUserService currentUserService,
         IEnrollmentRepository enrollmentRepository, IPublisher publisher, IUserRepository userRepository,
         IAttemptResultRepository attemptResultRepository, IExamRepository examRepository)
@@ -111,17 +111,17 @@ public class CourseService : ICourseService
         return _mapper.Map<IReadOnlyList<CourseDto>>(allUserCourses);
     }
 
-    public async Task<CourseDto> CreateCurseAsync(CreateCourse createCourse)
+    public async Task<CourseDto> CreateCurseAsync(CreateCourseDto createCourseDto)
     {
-        var validationResult = await _createCourseValidator.ValidateAsync(createCourse);
+        var validationResult = await _createCourseValidator.ValidateAsync(createCourseDto);
 
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
 
-        if (await _courseRepository.ExistsAsync(c => c.Title == createCourse.Title))
-            throw new InvalidOperationException($"Course with name {createCourse.Title} already exists");
+        if (await _courseRepository.ExistsAsync(c => c.Title == createCourseDto.Title))
+            throw new InvalidOperationException($"Course with name {createCourseDto.Title} already exists");
 
-        var createCourseModel = _mapper.Map<CourseModel>(createCourse);
+        var createCourseModel = _mapper.Map<CourseModel>(createCourseDto);
         createCourseModel.Id = Uuid.NewDatabaseFriendly(Database.SqlServer);
         createCourseModel.CreatedOn = createCourseModel.UpdatedOn = DateTime.UtcNow;
         createCourseModel.AuthorId = createCourseModel.LastUpdaterId = _currentUserService.GetUserId();
@@ -132,9 +132,9 @@ public class CourseService : ICourseService
         return _mapper.Map<CourseDto>(createdCourse);
     }
 
-    public async Task<CourseDto> UpdateCourseAsync(Guid courseId, UpdateCourse updateCourse)
+    public async Task<CourseDto> UpdateCourseAsync(Guid courseId, UpdateCourseDto updateCourseDto)
     {
-        var validationResult = await _updateCourseValidator.ValidateAsync(updateCourse);
+        var validationResult = await _updateCourseValidator.ValidateAsync(updateCourseDto);
 
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
@@ -154,7 +154,7 @@ public class CourseService : ICourseService
 
         var existingCourse = await GetEntityByIdAsync(courseId);
 
-        var updatedExistedCourseModel = _mapper.Map(updateCourse, existingCourse);
+        var updatedExistedCourseModel = _mapper.Map(updateCourseDto, existingCourse);
         updatedExistedCourseModel.UpdatedOn = DateTime.UtcNow;
         updatedExistedCourseModel.LastUpdaterId = userId;
 
@@ -210,7 +210,7 @@ public class CourseService : ICourseService
         if (user is null)
             throw new KeyNotFoundException("User not found.");
 
-        var enrollment = new CreateEnrollment
+        var enrollment = new CreateEnrollmentDto
         {
             CourseId = courseId,
             UserId = userId,
@@ -229,7 +229,7 @@ public class CourseService : ICourseService
 
         await EnsureUserHasAccessToCourseAsync(existingEnrollment.CourseId);
 
-        var updatedEnrolment = new UpdateEnrollment()
+        var updatedEnrolment = new UpdateEnrollmentDto()
         {
             Status = EnrollmentStatusEnum.Active,
             FinalGrade = await GetUserCourseScoreAsync(existingEnrollment.CourseId, existingEnrollment.UserId)
@@ -240,12 +240,12 @@ public class CourseService : ICourseService
 
     private async Task<CourseModel> GetEntityByIdAsync(Guid id)
     {
-        var lecture = await _courseRepository.GetByIdAsync(id);
+        var course = await _courseRepository.GetByIdAsync(id);
 
-        if (lecture is null)
-            throw new KeyNotFoundException($"Lecture with ID {id} not found");
+        if (course is null)
+            throw new KeyNotFoundException($"Course with ID {id} not found");
 
-        return lecture;
+        return course;
     }
 
     public async Task<double> GetCourseExamsProgressPercentAsync(Guid courseId, Guid userId, bool skipAccessCheck = false)

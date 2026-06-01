@@ -28,4 +28,7 @@ public interface IAttemptRepository : IRepository<UserExamAttemptModel>
     Task UpdateAnswerAsync(UserQuestionAnswerModel questionAnswer);
     Task SaveAnswersBatchAsync(List<UserQuestionAnswerModel> newAnswers,
         List<UserQuestionAnswerModel> existingAnswersToUpdate);
+
+    Task<UserExamAttemptAggregateModel?> GetAttemptAggregateAsync(Guid attemptId);
+    Task<int> GetAttemptCountAsync(Guid attemptId);
 }

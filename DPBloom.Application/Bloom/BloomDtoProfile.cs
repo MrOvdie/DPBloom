@@ -16,9 +16,9 @@ public class BloomDtoProfile : Profile
         CreateMap<RecommendedMaterial, RecommendationDto>();
         CreateMap<RecommendationTemplateModel, RecommendationTemplateDto>();
 
-        CreateMap<CreateRecommendationTemplate, RecommendationTemplateModel>();
+        CreateMap<CreateRecommendationTemplateDto, RecommendationTemplateModel>();
         
-        CreateMap<UpdateRecommendationTemplate, RecommendationTemplateModel>()
+        CreateMap<UpdateRecommendationTemplateDto, RecommendationTemplateModel>()
             .ForAllMembers(opt =>
                 opt.Condition((_, _, srcMember) =>
                     srcMember is not null));

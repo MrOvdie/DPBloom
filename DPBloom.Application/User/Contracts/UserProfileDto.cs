@@ -1,6 +1,4 @@
-﻿using System.Security.Claims;
-
-namespace DPBloom.Application.User;
+﻿namespace DPBloom.Application.User.Contracts;
 
 public class UserProfileDto
 {

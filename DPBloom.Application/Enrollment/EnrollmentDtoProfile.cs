@@ -9,9 +9,9 @@ public class EnrollmentDtoProfile : Profile
 {
     public EnrollmentDtoProfile()
     {
-        CreateMap<CreateEnrollment, UserEnrollmentModel>();
+        CreateMap<CreateEnrollmentDto, UserEnrollmentModel>();
         
-        CreateMap<UpdateEnrollment, UserEnrollmentModel>()
+        CreateMap<UpdateEnrollmentDto, UserEnrollmentModel>()
             .ForAllMembers(opt => 
                 opt.Condition((_, _, srcMember) => 
                     srcMember is not null));

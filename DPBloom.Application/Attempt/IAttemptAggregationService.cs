@@ -6,6 +6,8 @@ public interface IAttemptAggregationService
 {
     Task<IReadOnlyList<AttemptResultWithStatsDto>> GetAttemptResultsWithStatisticsByExamByUserAsync(Guid userId,
         Guid examId);
+    
+    Task<IReadOnlyList<AttemptResultWithStatsDto>> GetAttemptResultsWithStatisticsByExamAsync(Guid examId);
 
     Task<AttemptResultWithStatsDto> GetAttemptResultsWithStatisticsByIdAsync(Guid attemptResultId);
 }

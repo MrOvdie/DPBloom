@@ -16,17 +16,23 @@ public static class SoftDeleteExtension
         entity.DeletedOn = DateTime.UtcNow;
     }
     
-    public static void DeleteAggregate(this ExamDao exam)
+    public static void DeleteExamAggregate(this ExamDao exam)
     {
         exam.Delete();
 
-        foreach (var question in exam.Questions)
+        if (exam.Questions is not null)
         {
-            question.Delete();
-
-            foreach (var option in question.Options)
+            foreach (var question in exam.Questions)
             {
-                option.Delete();
+                question.Delete();
+
+                if (question.Options is not null)
+                {
+                    foreach (var option in question.Options)
+                    {
+                        option.Delete();
+                    }
+                }
             }
         }
     }

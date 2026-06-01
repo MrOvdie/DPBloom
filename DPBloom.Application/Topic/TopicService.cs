@@ -13,12 +13,12 @@ public class TopicService : ITopicService
     private readonly ITopicRepository _topicRepository;
     private readonly IEnrollmentRepository _enrollmentRepository;
     private readonly IMapper _mapper;
-    private readonly IValidator<CreateTopic> _createTopicValidator;
-    private readonly IValidator<UpdateTopic> _updateTopicValidator;
+    private readonly IValidator<CreateTopicDto> _createTopicValidator;
+    private readonly IValidator<UpdateTopicDto> _updateTopicValidator;
     private readonly ICurrentUserService _currentUserService;
 
-    public TopicService(ITopicRepository topicRepository, IMapper mapper, IValidator<CreateTopic> createTopicValidator,
-        IValidator<UpdateTopic> updateTopicValidator, ICurrentUserService currentUserService, IEnrollmentRepository enrollmentRepository)
+    public TopicService(ITopicRepository topicRepository, IMapper mapper, IValidator<CreateTopicDto> createTopicValidator,
+        IValidator<UpdateTopicDto> updateTopicValidator, ICurrentUserService currentUserService, IEnrollmentRepository enrollmentRepository)
     {
         _topicRepository = topicRepository;
         _mapper = mapper;
@@ -90,14 +90,14 @@ public class TopicService : ITopicService
         return _mapper.Map<List<TopicDto>>(topics);
     }
 
-    public async Task<TopicDto> CreateAsync(Guid courseId, CreateTopic createTopic)
+    public async Task<TopicDto> CreateAsync(Guid courseId, CreateTopicDto createTopicDto)
     {
-        var validationResult = await _createTopicValidator.ValidateAsync(createTopic);
+        var validationResult = await _createTopicValidator.ValidateAsync(createTopicDto);
 
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
 
-        var createTopicModel = _mapper.Map<TopicModel>(createTopic);
+        var createTopicModel = _mapper.Map<TopicModel>(createTopicDto);
         createTopicModel.Id = Uuid.NewDatabaseFriendly(Database.SqlServer);
         createTopicModel.CreatedOn = createTopicModel.UpdatedOn = DateTime.UtcNow;
         createTopicModel.AuthorId = createTopicModel.LastUpdaterId = _currentUserService.GetUserId();
@@ -113,10 +113,10 @@ public class TopicService : ITopicService
         return _mapper.Map<TopicDto>(createdTopic);
     }
 
-    public async Task<TopicDto> UpdateAsync(Guid topicId, UpdateTopic updateTopic)
+    public async Task<TopicDto> UpdateAsync(Guid topicId, UpdateTopicDto updateTopicDto)
     {
         
-        var validationResult = await _updateTopicValidator.ValidateAsync(updateTopic);
+        var validationResult = await _updateTopicValidator.ValidateAsync(updateTopicDto);
 
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
@@ -125,9 +125,9 @@ public class TopicService : ITopicService
         
         var existingTopic = await GetEntityByIdAsync(topicId);
         
-        updateTopic.CourseId ??= existingTopic.CourseId;
+        updateTopicDto.CourseId ??= existingTopic.CourseId;
 
-        var updatedExistedTopicModel = _mapper.Map(updateTopic, existingTopic);
+        var updatedExistedTopicModel = _mapper.Map(updateTopicDto, existingTopic);
         updatedExistedTopicModel.UpdatedOn = DateTime.UtcNow;
         updatedExistedTopicModel.LastUpdaterId = _currentUserService.GetUserId();
 

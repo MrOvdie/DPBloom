@@ -1,4 +1,5 @@
 ﻿using DPBloom.Core.Base;
+using DPBloom.Core.Exam.Enums;
 
 namespace DPBloom.Core.Exam;
 
@@ -15,6 +16,7 @@ public class ExamModel : EntityBase<Guid>
     public DateTime FinishesAt { get; set; }
     public double? MinimalPassScore { get; set; }
     public double MaximumScore { get; set; }
+    public EvaluationStrategy EvaluationStrategy { get; set; }
     public int AttemptsCount { get; set; }
     public bool CanSkip { get; set; }
     public bool ShowResults { get; set; }

@@ -3,6 +3,6 @@ using MediatR;
 
 namespace DPBloom.Application.Course.Events;
 
-public record UserDismissedEvent(Guid EnrollmentId, UpdateEnrollment UpdateEnrollment) : INotification
+public record UserDismissedEvent(Guid EnrollmentId, UpdateEnrollmentDto UpdateEnrollmentDto) : INotification
 {
 }

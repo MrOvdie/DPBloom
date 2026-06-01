@@ -15,6 +15,6 @@ public class UserEnrolledEventHandler : INotificationHandler<UserEnrolledEvent>
 
     public async Task Handle(UserEnrolledEvent notification, CancellationToken cancellationToken)
     {
-        await _enrollmentService.CreateAsync(notification.CreateEnrollment);
+        await _enrollmentService.CreateAsync(notification.CreateEnrollmentDto);
     }
 }

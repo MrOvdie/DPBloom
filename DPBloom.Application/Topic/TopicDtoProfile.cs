@@ -10,8 +10,8 @@ public class TopicDtoProfile : Profile
     public TopicDtoProfile()
     {
         CreateMap<TopicDto, TopicModel>().ReverseMap();
-        CreateMap<CreateTopic, TopicModel>();
-        CreateMap<UpdateTopic, TopicModel>()
+        CreateMap<CreateTopicDto, TopicModel>();
+        CreateMap<UpdateTopicDto, TopicModel>()
             .ForAllMembers(opt =>
                 opt.Condition((_, _, srcMember) =>
                     srcMember is not null));

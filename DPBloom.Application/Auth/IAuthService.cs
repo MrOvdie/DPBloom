@@ -1,5 +1,6 @@
 ﻿using DPBloom.Application.Auth.Contracts;
 using DPBloom.Application.User;
+using DPBloom.Application.User.Contracts;
 
 namespace DPBloom.Application.Auth;
 
@@ -9,5 +10,4 @@ public interface IAuthService
     Task<AuthResponseDto> LoginAsync(LoginRequestDto request);
     Task<UserProfileDto> UpdateUserProfileAsync(Guid userId, UpdateUserProfileDto dto);
     Task ChangeUserPasswordAsync(Guid userId, ChangePasswordDto dto);
-    Task<UserProfileDto?> GetUserProfileAsync(Guid userId);
 }

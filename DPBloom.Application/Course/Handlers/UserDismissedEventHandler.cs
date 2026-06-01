@@ -15,6 +15,6 @@ public class UserDismissedEventHandler : INotificationHandler<UserDismissedEvent
 
     public async Task Handle(UserDismissedEvent notification, CancellationToken cancellationToken)
     {
-        await _enrollmentService.UpdateAsync(notification.EnrollmentId, notification.UpdateEnrollment);
+        await _enrollmentService.UpdateAsync(notification.EnrollmentId, notification.UpdateEnrollmentDto);
     }
 }

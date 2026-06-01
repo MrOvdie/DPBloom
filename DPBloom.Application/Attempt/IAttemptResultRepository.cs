@@ -20,4 +20,5 @@ public interface IAttemptResultRepository : IRepository<AttemptResultModel>
     Task<List<AttemptResultModel>> GetAllManualReviewsAttemptsForExamAsync(Guid examId);
     Task<AttemptAccessInfo?> GetAccessInfoAsync(Guid attemptResultId);
     Task<AttemptResultRecordDto?> GetRecordByIdAsync(Guid attemptResultId);
+    Task<AttemptResultModel> GetByIdWithDetailsAsync(Guid id);
 }

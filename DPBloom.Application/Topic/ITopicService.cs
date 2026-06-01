@@ -10,6 +10,6 @@ public interface ITopicService : ICrud<TopicDto>
     Task<IReadOnlyList<TopicDto>> GetTopicByNameAsync(string topicName);
     Task<IReadOnlyList<TopicDto>> GetTopicsByAuthorAsync(Guid authorId);
     Task<IReadOnlyList<TopicDto>> GetTopicsByCourseAsync(Guid courseId);
-    Task<TopicDto> CreateAsync(Guid courseId, CreateTopic createTopic);
-    Task<TopicDto> UpdateAsync(Guid topicId, UpdateTopic updateTopic);
+    Task<TopicDto> CreateAsync(Guid courseId, CreateTopicDto createTopicDto);
+    Task<TopicDto> UpdateAsync(Guid topicId, UpdateTopicDto updateTopicDto);
 }

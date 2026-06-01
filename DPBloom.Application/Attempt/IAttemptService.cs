@@ -11,13 +11,19 @@ public interface IAttemptService
     Task<AttemptDetailsDto> ContinueAttemptAsync(Guid attemptId);
     Task<AttemptResultDto> FinishAsync(Guid attemptId);
     Task<AttemptResultDto> GetResultAsync(Guid attemptId);
+    Task<AttemptOverviewAggregateDto> GetResultOverviewAsync(Guid attemptId);
     Task<AttemptResultRecordDto> GetResultRecordAsync(Guid attemptResultId);
     Task<IReadOnlyList<AttemptResultRecordDto>> GetAttemptResultsByExamAsync(Guid examId);
 
-    Task<AttemptResultDto> CheckOpenTextAnswerAsync(Guid attemptResultId,
+    Task<AttemptResultDto> CheckOpenTextAnswersAsync(Guid attemptResultId,
         IReadOnlyList<TeacherEvaluationDto> teacherEvaluations);
 
+    Task<AttemptResultDto> CheckOpenTextAnswerAsync(Guid attemptResultId,
+        TeacherEvaluationDto teacherEvaluations);
+    
+    
     Task<IReadOnlyList<AttemptResultRecordDto>> GetAttemptResultsForManualReviewByExamAsync(Guid examId);
     Task<IReadOnlyList<AttemptResultRecordDto>> GetUserExamResultsAttempts(Guid userId, Guid examId);
     Task<IReadOnlyList<ExamAttemptDto>> GetUserExamAttempts(Guid userId, Guid examId);
+    Task<IReadOnlyList<ExamAttemptDto>> GetExamAttempts(Guid examId);
 }

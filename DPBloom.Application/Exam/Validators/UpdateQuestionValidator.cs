@@ -1,5 +1,6 @@
 ﻿using DPBloom.Application.Exam.Contracts;
 using DPBloom.Application.Exam.Contracts.Update;
+using DPBloom.Core.Exam.Enums;
 using FluentValidation;
 
 namespace DPBloom.Application.Exam.Validators;
@@ -28,6 +29,7 @@ public class UpdateQuestionValidator : AbstractValidator<UpdateQuestionDto>
             .WithMessage("At least 2 options are required for a choice-based question.");
         
         RuleForEach(q => q.Options)
-            .SetValidator(new UpdateOptionValidator());
+            .SetValidator(new UpdateOptionValidator())
+            .When(q => q.CheckingType == CheckingType.Automatic);
     }
 }

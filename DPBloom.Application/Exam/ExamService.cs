@@ -118,7 +118,7 @@ public class ExamService : IExamService
             questionModel.Id = Uuid.NewDatabaseFriendly(Database.SqlServer);
             questionModel.ExamId = createExamModel.Exam.Id;
             questionModel.CreatedOn = questionModel.UpdatedOn = DateTime.UtcNow;
-
+            
             if (questionDto.Options is not null)
             {
                 var optionsModels = _mapper.Map<List<AnswerOptionModel>>(questionDto.Options);
