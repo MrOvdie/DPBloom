@@ -1,6 +1,5 @@
 ﻿using AutoMapper;
 using DPBloom.Application.Auth.Contracts;
-using DPBloom.Application.User;
 using DPBloom.Application.User.Contracts;
 using DPBloom.Core.User;
 using FluentValidation;
@@ -16,15 +15,17 @@ public class AuthService : IAuthService
     private readonly IMapper _mapper;
     private readonly IValidator<RegisterUserDto> _registerValidator;
     private readonly IUserRepository _userRepository;
+    private readonly ICurrentUserService _currentUserService;
 
     public AuthService(IUserRepository userRepository, IJwtTokenGenerator jwtTokenGenerator, IMapper mapper,
-        IValidator<RegisterUserDto> registerValidator, IPasswordHasher<UserModel> passwordHasher)
+        IValidator<RegisterUserDto> registerValidator, IPasswordHasher<UserModel> passwordHasher, ICurrentUserService currentUserService)
     {
         _userRepository = userRepository;
         _jwtTokenGenerator = jwtTokenGenerator;
         _mapper = mapper;
         _registerValidator = registerValidator;
         _passwordHasher = passwordHasher;
+        _currentUserService = currentUserService;
     }
 
     public async Task<bool> RegisterAsync(RegisterUserDto user)
@@ -76,6 +77,13 @@ public class AuthService : IAuthService
         await _userRepository.UpdateUserAsync(userModel);
 
         return response;
+    }
+
+    public async Task LogoutAsync()
+    {
+        var userId = _currentUserService.GetUserId();
+        
+        await _userRepository.RemoveRefreshTokenAsync(userId);
     }
     
     public async Task<UserProfileDto> UpdateUserProfileAsync(Guid userId, UpdateUserProfileDto dto)

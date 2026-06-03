@@ -108,4 +108,40 @@ public class UserRepository : IUserRepository
         
         return _mapper.Map<List<UserModel>>(users);
     }
+
+    public async Task<UserModel?> GetUserByNameAsync(string userName)
+    {
+        var appUser = await _userManager.FindByNameAsync(userName);
+
+        return _mapper.Map<UserModel>(appUser);
+    }
+
+    public async Task<IReadOnlyList<UserModel?>> GetUsersByGroupAsync(string group)
+    {
+        var appUsers = await _userManager.Users
+            .Where(u => u.Group == group)
+            .ToListAsync();
+    
+        return _mapper.Map<List<UserModel?>>(appUsers);
+    }
+
+    public async Task<string> GetUserAccessTokens(Guid userId)
+    {
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user == null)
+            throw new KeyNotFoundException("User not found.");
+
+        var token = await _userManager.GetAuthenticationTokenAsync(user, "DPBloomApp", "RefreshToken");
+        
+        return token;
+    }
+
+    public async Task RemoveRefreshTokenAsync(Guid userId)
+    {
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user != null)
+        {
+            await _userManager.RemoveAuthenticationTokenAsync(user, "DPBloom", "RefreshToken");
+        }
+    }
 }

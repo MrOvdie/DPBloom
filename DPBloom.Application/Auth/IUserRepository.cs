@@ -11,4 +11,9 @@ public interface IUserRepository
     Task<bool> UpdateUserAsync(UserModel user);
     Task<UserModel?> GetUserByIdAsync(Guid userId);
     Task<IReadOnlyList<UserModel?>> GetUsersByIdsAsync(List<Guid> userIds);
+    Task<UserModel?> GetUserByNameAsync(string userName);
+    Task<IReadOnlyList<UserModel?>> GetUsersByGroupAsync(string group);
+
+    Task<string> GetUserAccessTokens(Guid userId);
+    Task RemoveRefreshTokenAsync(Guid userId);
 }

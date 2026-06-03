@@ -13,6 +13,7 @@ public class UserModel : EntityBase<Guid>
     public string PasswordHash { get; set; } = string.Empty;
     
     public string Email { get; set; } = string.Empty;
+    public string PhoneNumber { get; set; } = string.Empty;
     public string? Group { get; set; }
     public string? Faculty { get; set; }
     public string? AvatarUrl { get; set; }

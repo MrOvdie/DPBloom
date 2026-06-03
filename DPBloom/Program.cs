@@ -53,7 +53,7 @@ builder.Services.AddMediatR(cfg => { cfg.RegisterServicesFromAssembly(typeof(Cou
 
 // 1. Налаштування бази даних
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("LaptopConnection"))); //"LaptopConnection", "DesktopConnection"
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DesktopConnection"))); //"LaptopConnection", "DesktopConnection"
 
 // 2. Налаштування Identity (Без стандартних API ендпоінтів)
 builder.Services.AddIdentityCore<ApplicationUser>(options =>

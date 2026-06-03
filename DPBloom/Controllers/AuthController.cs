@@ -41,6 +41,15 @@ public class AuthController : ControllerBase
 
         return Ok(responseDto);
     }
+    
+    [HttpPost("logout")]
+    [Authorize]
+    public async Task<IActionResult> Logout()
+    {
+       await _authService.LogoutAsync();
+
+        return Ok();
+    }
 
     [HttpPut("update-profile/{userId:guid}")]
     [Authorize]

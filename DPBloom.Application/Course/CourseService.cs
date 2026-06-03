@@ -61,6 +61,21 @@ public class CourseService : ICourseService
         return _mapper.Map<CourseDto>(course);
     }
 
+    public async Task<IReadOnlyList<CourseDto>> GetUserCoursesAsync()
+    {
+        var userId = _currentUserService.GetUserId();
+
+        var enrolledCourses = await _enrollmentRepository.GetAllByUserIdAsync(userId);
+        var enrolledCoursesIds = enrolledCourses.Select(e => e.CourseId).Distinct().ToList();
+
+        var courses = await _courseRepository.GetAsync(c =>
+            (enrolledCoursesIds.Contains(c.Id) && c.IsPublished) || c.AuthorId == userId);
+
+        var uniqueCourses = courses.DistinctBy(c => c.Id).ToList();
+
+        return _mapper.Map<List<CourseDto>>(uniqueCourses);
+    }
+
     public async Task<CourseDto> GetByIdWithAccessAsync(Guid courseId)
     {
         var userId = _currentUserService.GetUserId();
@@ -93,22 +108,6 @@ public class CourseService : ICourseService
             throw new KeyNotFoundException($"courses from Author {authorId} not found");
 
         return _mapper.Map<IReadOnlyList<CourseDto>>(courses);
-    }
-
-    public async Task<IReadOnlyList<CourseDto>> GetEnrolledCoursesAsync()
-    {
-        var userId = _currentUserService.GetUserId();
-
-        var enrolledCourses = await _courseRepository.GetEnrolledCoursesByUserIdAsync(userId);
-
-        var authoredCourse = await _courseRepository.GetAsync(predicate: l => l.AuthorId.Equals(userId));
-
-        var allUserCourses = enrolledCourses
-            .Concat(authoredCourse)
-            .DistinctBy(c => c.Id)
-            .ToList();
-
-        return _mapper.Map<IReadOnlyList<CourseDto>>(allUserCourses);
     }
 
     public async Task<CourseDto> CreateCurseAsync(CreateCourseDto createCourseDto)
@@ -199,13 +198,13 @@ public class CourseService : ICourseService
         return courseAggregate;
     }
 
-    public async Task EnrollUserAsync(Guid courseId, Guid userId)
+    public async Task EnrollUserAsync(Guid courseId, string userName)
     {
         await EnsureUserHasAccessToCourseAsync(courseId);
 
         _ = await GetEntityByIdAsync(courseId);
 
-        var user = await _userRepository.GetUserByIdAsync(userId);
+        var user = await _userRepository.GetUserByNameAsync(userName);
 
         if (user is null)
             throw new KeyNotFoundException("User not found.");
@@ -213,11 +212,59 @@ public class CourseService : ICourseService
         var enrollment = new CreateEnrollmentDto
         {
             CourseId = courseId,
-            UserId = userId,
+            UserId = user.Id,
             Status = EnrollmentStatusEnum.Active
         };
 
         await _publisher.Publish(new UserEnrolledEvent(enrollment));
+    }
+
+    public async Task EnrollMultipleUsersAsync(Guid courseId, List<string> userNames)
+    {
+        await EnsureUserHasAccessToCourseAsync(courseId);
+
+        _ = await GetEntityByIdAsync(courseId);
+
+        foreach (var userName in userNames)
+        {
+            var user = await _userRepository.GetUserByNameAsync(userName);
+
+            if (user is null)
+                throw new KeyNotFoundException($"User with name {userName} not found.");
+
+            var enrollment = new CreateEnrollmentDto
+            {
+                CourseId = courseId,
+                UserId = user.Id,
+                Status = EnrollmentStatusEnum.Active
+            };
+
+            await _publisher.Publish(new UserEnrolledEvent(enrollment));
+        }
+    }
+
+    public async Task EnrollGroupAsync(Guid courseId, string group)
+    {
+        await EnsureUserHasAccessToCourseAsync(courseId);
+
+        _ = await GetEntityByIdAsync(courseId);
+
+        var users = await _userRepository.GetUsersByGroupAsync(group);
+
+        if (users is null || users.Count == 0)
+            throw new KeyNotFoundException("Users not found.");
+
+        foreach (var user in users)
+        {
+            var enrollment = new CreateEnrollmentDto
+            {
+                CourseId = courseId,
+                UserId = user.Id,
+                Status = EnrollmentStatusEnum.Active
+            };
+
+            await _publisher.Publish(new UserEnrolledEvent(enrollment));
+        }
     }
 
     public async Task DismissUserAsync(Guid enrollmentId)
@@ -248,7 +295,8 @@ public class CourseService : ICourseService
         return course;
     }
 
-    public async Task<double> GetCourseExamsProgressPercentAsync(Guid courseId, Guid userId, bool skipAccessCheck = false)
+    public async Task<double> GetCourseExamsProgressPercentAsync(Guid courseId, Guid userId,
+        bool skipAccessCheck = false)
     {
         if (!skipAccessCheck)
             await EnsureUserHasAccessToPersonalCourseStatisticAsync(courseId, userId);
@@ -258,7 +306,7 @@ public class CourseService : ICourseService
         var totalCourseExamsCount = courseExams.Count;
 
         if (totalCourseExamsCount == 0) return 0;
-        
+
         var userAttempts = await _attemptResultRepository
             .GetAsync(a => a.UserId.Equals(userId) && a.CourseId.Equals(courseId));
 
@@ -268,7 +316,8 @@ public class CourseService : ICourseService
         return (double)uniqueExamsPassed / totalCourseExamsCount * 100;
     }
 
-    public async Task<double> GetCourseScoreProgressPercentAsync(Guid courseId, Guid userId, bool skipAccessCheck = false)
+    public async Task<double> GetCourseScoreProgressPercentAsync(Guid courseId, Guid userId,
+        bool skipAccessCheck = false)
     {
         if (!skipAccessCheck)
             await EnsureUserHasAccessToPersonalCourseStatisticAsync(courseId, userId);
@@ -302,7 +351,8 @@ public class CourseService : ICourseService
         return userScore;
     }
 
-    public async Task<IReadOnlyList<AggregatedCourseStatsDto>> GetStatisticsForCoursesAsync(Guid userId, List<Guid> courseIds)
+    public async Task<IReadOnlyList<AggregatedCourseStatsDto>> GetStatisticsForCoursesAsync(Guid userId,
+        List<Guid> courseIds)
     {
         var courseStatistics = new List<AggregatedCourseStatsDto>();
 
@@ -316,7 +366,7 @@ public class CourseService : ICourseService
             var score = await GetUserCourseScoreAsync(courseId, userId, skipAccessCheck: true);
             var testCompletion = await GetCourseExamsProgressPercentAsync(courseId, userId, skipAccessCheck: true);
             var courseCompletion = await GetCourseScoreProgressPercentAsync(courseId, userId, skipAccessCheck: true);
-    
+
             courseStatistics.Add(new AggregatedCourseStatsDto()
             {
                 CourseId = courseId,
@@ -331,6 +381,10 @@ public class CourseService : ICourseService
 
     private async Task EnsureUserHasAccessToCourseAsync(Guid courseId)
     {
+        var courseExists = await _courseRepository.ExistsAsync(l => l.Id.Equals(courseId));
+        if (!courseExists)
+            throw new KeyNotFoundException("Course not found.");
+
         var isAdmin = _currentUserService.IsAdmin();
         if (isAdmin)
             return;
@@ -339,13 +393,7 @@ public class CourseService : ICourseService
         var isAuthor = await _courseRepository.IsCourseAuthorAsync(courseId, userId);
 
         if (!isAuthor)
-        {
-            var courseExists = await _courseRepository.ExistsAsync(l => l.Id.Equals(courseId));
-            if (!courseExists)
-                throw new KeyNotFoundException("Course not found.");
-
             throw new UnauthorizedAccessException("Only author or admins can modify this course.");
-        }
     }
 
     private async Task EnsureStudentIsEnrolledAsync(Guid courseId, Guid studentId)

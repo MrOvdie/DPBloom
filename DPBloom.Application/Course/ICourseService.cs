@@ -6,14 +6,16 @@ namespace DPBloom.Application.Course;
 
 public interface ICourseService : ICrud<CourseDto>
 {
+    Task<IReadOnlyList<CourseDto>> GetUserCoursesAsync();
     Task<CourseDto> GetByIdWithAccessAsync(Guid courseId);
     Task<IReadOnlyList<CourseDto>> GetCourseByNameAsync(string courseName);
     Task<IReadOnlyList<CourseDto>> GetCourseByAuthorAsync(Guid authorId);
-    Task<IReadOnlyList<CourseDto>> GetEnrolledCoursesAsync();
     Task<CourseDto> CreateCurseAsync(CreateCourseDto createCourseDto);
     Task<CourseDto> UpdateCourseAsync(Guid courseId, UpdateCourseDto updateCourseDto);
     Task<CourseAggregateDto?> GetCourseContentAsync(Guid courseId);
-    Task EnrollUserAsync(Guid courseId, Guid userId);
+    Task EnrollUserAsync(Guid courseId, string userName);
+    Task EnrollMultipleUsersAsync(Guid courseId, List<string> userNames);
+    Task EnrollGroupAsync(Guid courseId, string group);
     Task DismissUserAsync(Guid enrollmentId);
 
     Task<double> GetCourseExamsProgressPercentAsync(Guid courseId, Guid userId, bool skipAccessCheck = false);

@@ -25,7 +25,7 @@ public class CourseController : ControllerBase
         var courses = await _courseService.GetAllAsync();
         return Ok(courses);
     }
-
+    
     [HttpGet("{id:guid}")]
     [Authorize]
     public async Task<ActionResult<CourseDto>> GetById(Guid id)
@@ -70,7 +70,7 @@ public class CourseController : ControllerBase
     [Authorize]
     public async Task<ActionResult<IReadOnlyList<CourseDto>>> GetEnrolledCourses()
     {
-        var courses = await _courseService.GetEnrolledCoursesAsync();
+        var courses = await _courseService.GetUserCoursesAsync();
         if (courses is null) return NotFound();
         
         return Ok(courses);
@@ -114,13 +114,13 @@ public class CourseController : ControllerBase
         return Ok(result);
     }
 
-    [HttpPost("{courseId}/enroll/{userId:guid}")]
+    [HttpPost("{courseId:guid}/enroll/{userName}")]
     [Authorize(Policy = "RequireTeacherPrivileges")]
-    public async Task<IActionResult> EnrollStudent(Guid courseId, Guid userId)
+    public async Task<IActionResult> EnrollStudent(Guid courseId, string userName)
     {
         try
         {
-            await _courseService.EnrollUserAsync(courseId, userId);
+            await _courseService.EnrollUserAsync(courseId, userName);
             return Ok("User successfully enrolled in the course.");
         }
         catch (KeyNotFoundException ex)
@@ -134,6 +134,44 @@ public class CourseController : ControllerBase
         catch (Exception)
         {
             return StatusCode(500, "Internal server error.");
+        }
+    }
+    
+    [HttpPost("{courseId}/enroll-multiple")]
+    [Authorize(Policy = "RequireTeacherPrivileges")]
+    public async Task<IActionResult> EnrollStudents(Guid courseId, [FromBody] List<string> userNames)
+    {
+        try
+        {
+            await _courseService.EnrollMultipleUsersAsync(courseId, userNames);
+            return Ok("Users successfully enrolled in the course.");
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+    
+    [HttpPost("{courseId}/enroll-group/{group}")]
+    [Authorize(Policy = "RequireTeacherPrivileges")]
+    public async Task<IActionResult> EnrollStudentsGroup(Guid courseId, string group)
+    {
+        try
+        {
+            await _courseService.EnrollGroupAsync(courseId, group);
+            return Ok("Users successfully enrolled in the course.");
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
         }
     }
     
