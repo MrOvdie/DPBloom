@@ -18,7 +18,7 @@ public class ExamRepository : RepositoryBase<ExamModel, ExamDao, ApplicationDbCo
     {
         var examsDao = await DbContext.Exams
             .Where(e => e.CourseId.Equals(courseId)).ToListAsync();
-        
+
         return Mapper.Map<List<ExamModel>>(examsDao);
     }
 
@@ -31,7 +31,7 @@ public class ExamRepository : RepositoryBase<ExamModel, ExamDao, ApplicationDbCo
 
         return Mapper.Map<ExamAggregateModel>(examDao);
     }*/
-    
+
     public async Task<ExamAggregateModel?> GetWithQuestionsAsync(Guid examId)
     {
         var examDao = await DbContext.Exams
@@ -45,16 +45,18 @@ public class ExamRepository : RepositoryBase<ExamModel, ExamDao, ApplicationDbCo
         {
             Exam = Mapper.Map<ExamModel>(examDao),
             Questions = Mapper.Map<List<QuestionModel>>(examDao.Questions ?? new List<QuestionDao>()),
-        
-            AnswerOptions = examDao.Questions is not null 
-                ? Mapper.Map<List<AnswerOptionModel>>(examDao.Questions.SelectMany(q => q.Options ?? new List<AnswerOptionDao>()))
+
+            AnswerOptions = examDao.Questions is not null
+                ? Mapper.Map<List<AnswerOptionModel>>(
+                    examDao.Questions.SelectMany(q => q.Options ?? new List<AnswerOptionDao>()))
                 : []
         };
 
         return aggregate;
     }
 
-    public async Task<IReadOnlyList<UserQuestionAnswerModel>> GetUserAnswersForQuestionAsync(Guid attemptId, Guid questionId)
+    public async Task<IReadOnlyList<UserQuestionAnswerModel>> GetUserAnswersForQuestionAsync(Guid attemptId,
+        Guid questionId)
     {
         var answers = await DbContext.UserAnswers
             .Where(ao => ao.AttemptId.Equals(attemptId) && ao.QuestionId.Equals(questionId))
@@ -78,32 +80,63 @@ public class ExamRepository : RepositoryBase<ExamModel, ExamDao, ApplicationDbCo
         var existingExamDao = await DbContext.Exams
             .Include(e => e.Questions)
             .ThenInclude(q => q.Options)
-            .FirstOrDefaultAsync(e => e.Id.Equals(model.Exam.Id));
+            .FirstOrDefaultAsync(e => e.Id == model.Exam.Id);
 
-        if (existingExamDao == null)
+        if (existingExamDao is null)
             throw new KeyNotFoundException($"Exam with ID {model.Exam.Id} not found.");
 
-        Mapper.Map(model.Exam, existingExamDao);
+        DbContext.Entry(existingExamDao).CurrentValues.SetValues(model.Exam);
 
-        var newQuestionsDao = Mapper.Map<List<QuestionDao>>(model.Questions);
+        var incomingQuestionIds = model.Questions.Select(q => q.Id).ToList();
+        var incomingOptionIds = model.AnswerOptions.Select(o => o.Id).ToList();
 
-        existingExamDao.Questions.SyncCollection(
-            newQuestionsDao,
-            q => q.Id,
-            (dbItem, incomingItem) =>
+        var optionsToRemove = existingExamDao.Questions
+            .SelectMany(q => q.Options)
+            .Where(o => !incomingOptionIds.Contains(o.Id))
+            .ToList();
+        DbContext.RemoveRange(optionsToRemove);
+
+        var questionsToRemove = existingExamDao.Questions
+            .Where(q => !incomingQuestionIds.Contains(q.Id))
+            .ToList();
+        DbContext.RemoveRange(questionsToRemove);
+
+        foreach (var qModel in model.Questions)
+        {
+            var existingQuestionDao = existingExamDao.Questions.FirstOrDefault(q => q.Id == qModel.Id);
+
+            if (existingQuestionDao is not null)
             {
-                Mapper.Map(incomingItem, dbItem);
-                var newOptionsDao =
-                    Mapper.Map<ICollection<AnswerOptionDao>>(
-                        model.AnswerOptions.Where(ao => ao.QuestionId.Equals(incomingItem.Id)));
-
-                dbItem.Options.SyncCollection(
-                    newOptionsDao,
-                    o => o.Id,
-                    (dbOption, incomingOption) => Mapper.Map(incomingOption, dbOption)
-                );
+                DbContext.Entry(existingQuestionDao).CurrentValues.SetValues(qModel);
             }
-        );
+            else
+            {
+                existingQuestionDao = Mapper.Map<QuestionDao>(qModel);
+                existingQuestionDao.Options = new List<AnswerOptionDao>();
+
+                DbContext.Entry(existingQuestionDao).State = EntityState.Added;
+                existingExamDao.Questions.Add(existingQuestionDao);
+            }
+
+            var optionsForQuestion = model.AnswerOptions.Where(o => o.QuestionId == qModel.Id).ToList();
+
+            foreach (var oModel in optionsForQuestion)
+            {
+                var existingOptionDao = existingQuestionDao.Options.FirstOrDefault(o => o.Id == oModel.Id);
+
+                if (existingOptionDao != null)
+                {
+                    DbContext.Entry(existingOptionDao).CurrentValues.SetValues(oModel);
+                }
+                else
+                {
+                    var newOptionDao = Mapper.Map<AnswerOptionDao>(oModel);
+
+                    DbContext.Entry(newOptionDao).State = EntityState.Added;
+                    existingQuestionDao.Options.Add(newOptionDao);
+                }
+            }
+        }
 
         await DbContext.SaveChangesAsync();
 
@@ -117,7 +150,7 @@ public class ExamRepository : RepositoryBase<ExamModel, ExamDao, ApplicationDbCo
         DbContext.ChangeTracker.Clear();
 
         examDao.DeleteExamAggregate();
-    
+
         DbContext.Exams.Update(examDao);
         await DbContext.SaveChangesAsync();
     }
@@ -129,7 +162,7 @@ public class ExamRepository : RepositoryBase<ExamModel, ExamDao, ApplicationDbCo
         await DbContext.SaveChangesAsync();
     }
 
-    
+
     private ExamDao MapExamAggregateToDao(ExamAggregateModel model)
     {
         var examDao = Mapper.Map<ExamDao>(model.Exam);
@@ -175,14 +208,14 @@ public class ExamRepository : RepositoryBase<ExamModel, ExamDao, ApplicationDbCo
 
         return examAggregate;
     }
-    
+
     public async Task<Guid?> GetCourseIdByExamIdAsync(Guid examId)
     {
         var courseId = await DbContext.Exams.Where(e => e.Id == examId).Select(e => e.CourseId).FirstOrDefaultAsync();
 
         return courseId;
     }
-    
+
     public async Task<bool> IsExamAuthorAsync(Guid examId, Guid userId)
     {
         return await DbContext.Exams

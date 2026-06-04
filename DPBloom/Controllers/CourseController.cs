@@ -51,7 +51,7 @@ public class CourseController : ControllerBase
     public async Task<ActionResult<IReadOnlyList<CourseDto>>> GetCourseByName(string courseName)
     {
         var courses = await _courseService.GetCourseByNameAsync(courseName);
-        if (courses is null) return NotFound(); //TODO: maybe add checking of enrollment and so
+        if (courses is null) return NotFound();
         
         return Ok(courses);
     }

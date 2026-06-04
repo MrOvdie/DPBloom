@@ -1,6 +1,8 @@
-﻿namespace DPBloom.Application.ANN;
+﻿using DPBloom.Core.Exam.Enums;
+
+namespace DPBloom.Application.ANN;
 
 public interface IBloomLevelPredictor
 {
-    Task<int> PredictLevelAsync(string questionText); 
+    Task<BloomLevel> PredictLevelAsync(string questionText); 
 }

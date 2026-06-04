@@ -10,6 +10,7 @@ public interface IExamService
     Task<IReadOnlyList<ExamRecordDto>> GetAllExamsAsync();
     Task<ExamRecordDto> GetExamOverviewByIdAsync(Guid examId);
     Task<ExamDetailsDto?> GetExamDetailsAsync(Guid examId);
+    Task<ExamDetailsForUpdateDto?> GetExamUpdateDetailsAsync(Guid examId);
     Task<IReadOnlyList<ExamRecordDto>> GetExamsByCourseAsync(Guid courseId);
     Task<Guid> CreateExamAsync(Guid courseId, CreateExamDto createExam);
     Task<ExamDetailsDto> UpdateExamAsync(Guid examId, UpdateExamDto updateExam);

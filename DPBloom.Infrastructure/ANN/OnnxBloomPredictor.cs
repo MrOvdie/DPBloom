@@ -1,4 +1,5 @@
 ﻿using DPBloom.Application.ANN;
+using DPBloom.Core.Exam.Enums;
 using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
 
@@ -13,15 +14,18 @@ public class OnnxBloomPredictor : IBloomLevelPredictor, IDisposable
         _session = new InferenceSession("C:\\Users\\maxim\\OneDrive\\Documents\\University\\4Year\\Diploma\\DPBloom\\DPBloom\\DPBloom.Infrastructure\\ANN\\MlModels\\bloom_model.onnx");
     }
 
-    public async Task<int> PredictLevelAsync(string questionText)
+    public async Task<BloomLevel> PredictLevelAsync(string questionText)
     {
-        var onnxInput = TokenizeText(questionText);
-    
-        using var results = _session.Run(new List<NamedOnnxValue> { onnxInput });
+        return await Task.Run(() =>
+        {
+            var onnxInput = TokenizeText(questionText);
 
-        var prediction = (int)(results.FirstOrDefault(r => r.Name == "output_label")?.AsTensor<long>().First() ?? 0);
+            using var results = _session.Run(new List<NamedOnnxValue> { onnxInput });
 
-        return prediction;
+            var prediction = results.FirstOrDefault(r => r.Name == "output_label")?.AsTensor<long>().First() ?? 0;
+
+            return (BloomLevel)prediction;
+        });
     }
 
     private NamedOnnxValue TokenizeText(string text)

@@ -61,11 +61,11 @@ public class ExamService : IExamService
         var examAggregate = await _examRepository.GetWithQuestionsAsync(examId);
         if (examAggregate is null)
             throw new KeyNotFoundException($"Exam with ID {examId} not found");
-        
+
         var dto = _mapper.Map<ExamDetailsDto>(examAggregate.Exam);
 
         dto.Questions = _mapper.Map<List<QuestionDto>>(examAggregate.Questions);
-        
+
         foreach (var questionDto in dto.Questions)
         {
             if (examAggregate.AnswerOptions is not null)
@@ -73,11 +73,38 @@ public class ExamService : IExamService
                 var optionsForQuestion = examAggregate.AnswerOptions
                     .Where(o => o.QuestionId == questionDto.Id)
                     .ToList();
-            
+
                 questionDto.Options = _mapper.Map<List<OptionDto>>(optionsForQuestion);
             }
         }
-        
+
+        return dto;
+    }
+
+    public async Task<ExamDetailsForUpdateDto?> GetExamUpdateDetailsAsync(Guid examId)
+    {
+        await EnsureHasAccessToGenericExamContent(examId);
+
+        var examAggregate = await _examRepository.GetWithQuestionsAsync(examId);
+        if (examAggregate is null)
+            throw new KeyNotFoundException($"Exam with ID {examId} not found");
+
+        var dto = _mapper.Map<ExamDetailsForUpdateDto>(examAggregate.Exam);
+
+        dto.Questions = _mapper.Map<List<QuestionForUpdateDto>>(examAggregate.Questions);
+
+        foreach (var questionDto in dto.Questions)
+        {
+            if (examAggregate.AnswerOptions is not null)
+            {
+                var optionsForQuestion = examAggregate.AnswerOptions
+                    .Where(o => o.QuestionId == questionDto.Id)
+                    .ToList();
+
+                questionDto.Options = _mapper.Map<List<OptionForUpdateDto>>(optionsForQuestion);
+            }
+        }
+
         return dto;
     }
 
@@ -118,7 +145,7 @@ public class ExamService : IExamService
             questionModel.Id = Uuid.NewDatabaseFriendly(Database.SqlServer);
             questionModel.ExamId = createExamModel.Exam.Id;
             questionModel.CreatedOn = questionModel.UpdatedOn = DateTime.UtcNow;
-            
+
             if (questionDto.Options is not null)
             {
                 var optionsModels = _mapper.Map<List<AnswerOptionModel>>(questionDto.Options);
@@ -144,13 +171,13 @@ public class ExamService : IExamService
         var validationResult = await _updateValidator.ValidateAsync(updateDto);
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
-        
+
         var existingExam = await _examRepository.GetWithQuestionsAsync(examId);
         if (existingExam is null)
             throw new KeyNotFoundException("Exam not found");
 
         updateDto.Id = examId;
-        
+
         _mapper.Map(updateDto, existingExam.Exam);
         existingExam.Exam.UpdatedOn = DateTime.UtcNow;
         existingExam.Exam.LastUpdaterId = _currentUserService.GetUserId();
@@ -178,7 +205,6 @@ public class ExamService : IExamService
 
         var optionsToRemove = existingExam.AnswerOptions.Where(o => !incomingOptionIds.Contains(o.Id)).ToList();
         foreach (var o in optionsToRemove) existingExam.AnswerOptions.Remove(o);
-
 
         foreach (var qDto in updateDto.Questions)
         {
@@ -223,7 +249,6 @@ public class ExamService : IExamService
                     {
                         var newOpt = _mapper.Map<AnswerOptionModel>(optDto);
                         newOpt.Id = Uuid.NewDatabaseFriendly(Database.SqlServer);
-
                         newOpt.QuestionId = currentQuestionId;
                         newOpt.CreatedOn = newOpt.UpdatedOn = DateTime.UtcNow;
 
@@ -238,30 +263,7 @@ public class ExamService : IExamService
 
         return updatedExamAggregateModel.ToDetailsDto(_mapper);
     }
-    /*public async Task<ExamDetailsDto> UpdateExamAsync(Guid examId, UpdateExamDto updateExam)
-    {
-        var validationResult = await _updateValidator.ValidateAsync(updateExam);
 
-        if (!validationResult.IsValid)
-            throw new ValidationException(validationResult.Errors);
-
-        await EnsureUserHasAccessToExamModifyingAsync(examId);
-
-        var existingExam = await GetEntityByIdAsync(examId);
-
-        updateExam.CourseId ??= existingExam.Exam.CourseId;
-
-        updateExam.TopicId ??= existingExam.Exam.TopicId;
-
-        var updatedExistedExamModel = _mapper.Map(updateExam, existingExam);
-        updatedExistedExamModel.Exam.UpdatedOn = DateTime.UtcNow;
-        updatedExistedExamModel.Exam.LastUpdaterId = _currentUserService.GetUserId();
-
-        var updatedExam = await _examRepository.UpdateExamWithDetailsAsync(updatedExistedExamModel);
-
-        return _mapper.Map<ExamDetailsDto>(updatedExam);
-    }*/
-    
     public async Task<ExamDetailsDto> DeleteExamAsync(Guid examId)
     {
         await EnsureUserHasAccessToExamModifyingAsync(examId);
