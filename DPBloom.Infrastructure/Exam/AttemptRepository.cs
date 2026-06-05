@@ -63,7 +63,7 @@ public class AttemptRepository : RepositoryBase<UserExamAttemptModel, UserExamAt
 
         DbContext.UserAnswers.Add(answerEntity);
 
-        await DbContext.SaveChangesAsync(); //TODO: maybe add some checking confirmation, if entity was updated
+        await DbContext.SaveChangesAsync();
     }
 
     public async Task SaveAllAnswersAsync(Guid attemptId, List<UserQuestionAnswerModel> answers)

@@ -36,7 +36,6 @@ public class UpdateLectureValidator : AbstractValidator<UpdateLectureDto>
             .NotEmpty().When(x => x.TopicId != null)
             .WithMessage("TopicId can't be empty.");
         
-        //TODO: check if it working properly
         RuleForEach(ul => ul.FilePaths)
             .MaximumLength(360)
             .WithMessage("FilePath must be at most 360 characters long.")

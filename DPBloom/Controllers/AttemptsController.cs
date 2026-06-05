@@ -54,7 +54,7 @@ public class AttemptsController : ControllerBase
     public async Task<IActionResult> SubmitAnswers(Guid attemptId, [FromBody] List<SubmitAnswerDto> request)
     {
         var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!Guid.TryParse(userIdString, out var userId)) return Unauthorized(); //TODO: check
+        if (!Guid.TryParse(userIdString, out var userId)) return Unauthorized(); 
 
         try
         {
@@ -120,7 +120,7 @@ public class AttemptsController : ControllerBase
     
     [HttpGet("/attempt-stats/{attemptResultId:guid}")]
     [Authorize]
-    public async Task<ActionResult<AttemptResultWithStatsDto>> GetAttemptStatsByExamAndUserAsync(Guid attemptResultId)
+    public async Task<ActionResult<AttemptResultWithStatsDto>> GetAttemptStatsByAttemptIdAsync(Guid attemptResultId)
     {
         var attemptAggregate = await _attemptAggregationService.GetAttemptResultsWithStatisticsByIdAsync(attemptResultId);
         

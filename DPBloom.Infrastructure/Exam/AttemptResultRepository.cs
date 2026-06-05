@@ -19,7 +19,6 @@ public class AttemptResultRepository : RepositoryBase<AttemptResultModel, Attemp
 
     public async Task SaveManualQuestionAnswerReviewAsync(Guid attemptResultId, QuestionResultModel model)
     {
-        //TODO: check if this is correct approach
         var existingAttemptResult = await DbContext.AttemptResults
             .FirstOrDefaultAsync(qr => qr.Id.Equals(attemptResultId));
 
@@ -51,7 +50,9 @@ public class AttemptResultRepository : RepositoryBase<AttemptResultModel, Attemp
 
     public async Task<AttemptResultModel> GetAttemptResultByIdAsync(Guid attemptResultId)
     {
-        var attemptResult = await DbContext.AttemptResults.FindAsync(attemptResultId);
+        var attemptResult = await DbContext.AttemptResults
+            .Include(ar => ar.Details) 
+            .FirstOrDefaultAsync(ar => ar.Id == attemptResultId);
 
         return Mapper.Map<AttemptResultModel>(attemptResult);
     }

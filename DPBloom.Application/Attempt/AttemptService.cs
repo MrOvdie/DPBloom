@@ -180,6 +180,9 @@ public class AttemptService : IAttemptService
             ExamId = attempt.ExamId,
             ExamTitle = exam.Exam.Title,
             ExamDescription = exam.Exam.Description,
+            CanSkip = exam.Exam.CanSkip,
+            ShowResults = exam.Exam.ShowResults,
+            IsRandomOrder = exam.Exam.IsRandomOrder,
             StartedAt = attempt.StartedAt,
             Duration = exam.Exam.Duration,
             AttemptNumber = attemptCount,
@@ -583,6 +586,8 @@ public class AttemptService : IAttemptService
                 await _attemptRepository.UpdateAsync(attempt);
                 await _bloomService.AnalyzeAndSaveAttemptAsync(attemptResultId);
             }
+
+            await _bloomService.AnalyzeAndSaveAttemptAsync(updatedResult.Id);
         }
 
         return _mapper.Map<AttemptResultDto>(updatedResult);
@@ -622,6 +627,7 @@ public class AttemptService : IAttemptService
 
         questionResult.Score = finalScore;
         questionResult.IsCorrect = finalScore > 0;
+        questionResult.Comment = evaluation.Comment;
         questionResult.QuestionResultStatus = AttemptStatus.Checked;
 
         var (updatedResult, hasPending) = UpdateAttemptResultMetrics(attemptResult, exam);
@@ -637,6 +643,7 @@ public class AttemptService : IAttemptService
             {
                 attempt.Status = AttemptStatus.Checked;
                 await _attemptRepository.UpdateAsync(attempt);
+                
                 await _bloomService.AnalyzeAndSaveAttemptAsync(attemptResultId);
             }
         }
@@ -814,9 +821,14 @@ public class AttemptService : IAttemptService
             ? Math.Round((attemptResult.Score / totalPossibleScore) * 100, 2)
             : 0;
 
-        var hasPending = attemptResult.Details
-            .Any(d => exam.Questions.First(q => q.Id == d.QuestionId).CheckingType == CheckingType.Manual
-                      && d.QuestionResultStatus != AttemptStatus.Checked);
+        var hasPending = exam.Questions
+            .Where(q => q.CheckingType == CheckingType.Manual)
+            .Any(q => 
+            {
+                var detail = attemptResult.Details.FirstOrDefault(d => d.QuestionId == q.Id);
+        
+                return detail is not { QuestionResultStatus: AttemptStatus.Checked };
+            });
 
         attemptResult.Passed = !hasPending &&
                                (exam.Exam.MinimalPassScore is null ||

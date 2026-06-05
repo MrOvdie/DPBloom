@@ -15,7 +15,6 @@ public class UpdateCourseValidator : AbstractValidator<UpdateCourseDto>
             .MinimumLength(3).When(uc => !string.IsNullOrEmpty(uc.Title))
             .WithMessage("Title must be at least 3 characters long.");
         
-        //TODO: check, if it is working properly
         RuleFor(uc => uc.Description)
             .NotEmpty().When(x => x.Description is not null)
             .Must(d => string.IsNullOrEmpty(d) || d.Length >= 3)

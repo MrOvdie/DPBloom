@@ -4,6 +4,8 @@ namespace DPBloom.Application.Attempt.Contracts;
 
 public class AttemptResultWithStatsDto
 {
+    public bool HasUncheckedAttempts { get; set; }
+    
     public AttemptResultRecordDto AttemptResult { get; set; } = null!;
 
     public ExamAttemptDto? ExamAttempt { get; set; }

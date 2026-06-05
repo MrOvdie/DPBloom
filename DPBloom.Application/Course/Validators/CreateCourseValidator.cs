@@ -14,7 +14,6 @@ public class CreateCourseValidator : AbstractValidator<CreateCourseDto>
             .MinimumLength(3).WithMessage("Title must be at least 3 characters long.")
             .MaximumLength(150).WithMessage("Title must be at most 150 characters long.");
         
-        //TODO: check, if it working properly
         RuleFor(cc => cc.Description)
             .Must(d => string.IsNullOrEmpty(d) || d.Length >= 3)
             .WithMessage("Description must be at least 3 characters long.");

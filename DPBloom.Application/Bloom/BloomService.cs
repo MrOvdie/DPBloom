@@ -266,8 +266,6 @@ public class BloomService : IBloomService
             throw new KeyNotFoundException("Exam not found");
         }
 
-        //var questionDict = examAggregate.Questions.ToDictionary(q => q.Id, q => q);
-
         var allAttemptsForExam = await _attemptResultRepository.GetAllAttemptsResultsByExamAsync(examId);
 
         var categoriesInExam = examAggregate.Questions.Select(q => q.Level).Distinct();

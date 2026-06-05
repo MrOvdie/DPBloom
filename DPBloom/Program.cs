@@ -40,7 +40,6 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
-        // Цей конвертер змусить систему розуміти енуми як текст
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
 
@@ -51,11 +50,11 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 
 builder.Services.AddMediatR(cfg => { cfg.RegisterServicesFromAssembly(typeof(CourseService).Assembly); });
 
-// 1. Налаштування бази даних
+// DB configuration
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DesktopConnection"))); //"LaptopConnection", "DesktopConnection"
 
-// 2. Налаштування Identity (Без стандартних API ендпоінтів)
+// Identity configuration
 builder.Services.AddIdentityCore<ApplicationUser>(options =>
     {
         options.Password.RequiredLength = 6;
@@ -69,7 +68,7 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
     .AddRoles<IdentityRole<Guid>>()
     .AddEntityFrameworkStores<ApplicationDbContext>();
 
-// 3. Реєстрація AutoMapper
+// AutoMapper Registration
 builder.Services.AddAutoMapper(config =>
 {
     config.AddExpressionMapping();
@@ -86,10 +85,9 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddHostedService<ExpiredAttemptCleaner>();
 builder.Services.AddHostedService<ExpiredAttemptCleaner>();
 
-// Цей рядок автоматично знайде всі класи-валідатори у тій же збірці, де знаходиться CreateCourseValidator
 builder.Services.AddValidatorsFromAssemblyContaining<CreateCourseValidator>();
 
-// 5. Реєстрація репозиторіїв
+// Repositories Registration
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IExamRepository, ExamRepository>();
 builder.Services.AddScoped<ICourseRepository, CourseRepository>();
@@ -101,7 +99,7 @@ builder.Services.AddScoped<IBloomRepository, BloomRepository>();
 builder.Services.AddScoped<IEnrollmentRepository, EnrollmentRepository>();
 builder.Services.AddScoped<IRecommendationTemplateRepository, RecommendationTemplateRepository>();
 
-// 6. Реєстрація бізнес-сервісів
+// Services Registration
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ICourseService, CourseService>();
 builder.Services.AddScoped<ITopicService, TopicService>();
@@ -119,7 +117,7 @@ builder.Services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
 builder.Services.AddSingleton<IBloomLevelPredictor, OnnxBloomPredictor>();
 builder.Services.AddScoped<IPasswordHasher<UserModel>, PasswordHasher<UserModel>>();
 
-// 7. Налаштування JWT та авторизації
+// Jwt and Authorization configuration
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
 
 var jwtSecret = builder.Configuration["Jwt:Secret"] ?? throw new InvalidOperationException("JWT Secret is missing");
@@ -149,9 +147,9 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("RequireTeacherPrivileges", policy => policy.RequireRole("Admin", "Teacher"));
     options.AddPolicy("RequireAdminPrivileges", policy => policy.RequireRole("Admin"));
     options.AddPolicy("CanManageSystemData", policy => policy.RequireClaim("Permission", "ManageSystemData"));
-}); //TODO: check, if smth else is required
+});
 
-// 8. Налаштування OpenAPI з підтримкою Bearer Token
+// OpenAPI with Bearer Token configuration
 builder.Services.AddOpenApi(options =>
 {
     options.AddDocumentTransformer((document, context, cancellationToken) =>

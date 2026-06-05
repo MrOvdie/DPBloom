@@ -6,7 +6,7 @@ namespace DPBloom.Application.Exam;
 public interface IExamRepository : IRepository<ExamModel>
 {
     Task<IReadOnlyList<ExamModel>> GetByCourseAsync(Guid courseId);
-    Task<ExamAggregateModel?> GetWithQuestionsAsync(Guid examId); //TODO: problems with aggregated model
+    Task<ExamAggregateModel?> GetWithQuestionsAsync(Guid examId);
     Task<IReadOnlyList<UserQuestionAnswerModel>> GetUserAnswersForQuestionAsync(Guid attemptId, Guid questionId);
     Task<ExamAggregateModel> AddExamWithDetailsAsync(ExamAggregateModel model);
     Task<ExamAggregateModel> UpdateExamWithDetailsAsync(ExamAggregateModel model);

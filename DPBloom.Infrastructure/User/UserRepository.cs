@@ -61,12 +61,12 @@ public class UserRepository : IUserRepository
     {
         var appUser = _mapper.Map<ApplicationUser>(user);
 
-        var result = await _userManager.CreateAsync(appUser, password); //TODO: check saving process
+        var result = await _userManager.CreateAsync(appUser, password);
 
         if (result.Succeeded)
         {
             await _userManager.AddClaimAsync(appUser,
-                new Claim(ClaimTypes.Role, initialRole)); //TODO: maybe add some more claims
+                new Claim(ClaimTypes.Role, initialRole));
         }
 
         return result.Succeeded;

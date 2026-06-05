@@ -7,6 +7,6 @@ public class UserProfile : Profile
 {
     public UserProfile()
     {
-        CreateMap<ApplicationUser, UserModel>().ReverseMap(); //TODO: check this
+        CreateMap<ApplicationUser, UserModel>().ReverseMap();
     }
 }

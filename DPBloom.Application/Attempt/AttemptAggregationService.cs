@@ -1,5 +1,7 @@
 ﻿using DPBloom.Application.Attempt.Contracts;
 using DPBloom.Application.Bloom;
+using DPBloom.Application.Exam;
+using DPBloom.Core.Exam.Enums;
 
 namespace DPBloom.Application.Attempt;
 
@@ -7,13 +9,15 @@ public class AttemptAggregationService : IAttemptAggregationService
 {
     private readonly IBloomService _bloomService;
     private readonly IAttemptService _attemptService;
+    private readonly IExamRepository _examRepository;
     
     
 
-    public AttemptAggregationService(IBloomService bloomService, IAttemptService attemptService)
+    public AttemptAggregationService(IBloomService bloomService, IAttemptService attemptService, IExamRepository examRepository)
     {
         _bloomService = bloomService;
         _attemptService = attemptService;
+        _examRepository = examRepository;
     }
 
     public async Task<IReadOnlyList<AttemptResultWithStatsDto>> GetAttemptResultsWithStatisticsByExamByUserAsync(Guid userId, Guid examId)
@@ -41,37 +45,60 @@ public class AttemptAggregationService : IAttemptAggregationService
         return aggregatedResults;
     }
 
-    public async Task<IReadOnlyList<AttemptResultWithStatsDto>> GetAttemptResultsWithStatisticsByExamAsync(Guid examId)
-    {
-        var attemptRecords = await _attemptService.GetAttemptResultsByExamAsync(examId);
-        if (attemptRecords is null || !attemptRecords.Any())
-            return [];
+   public async Task<IReadOnlyList<AttemptResultWithStatsDto>> GetAttemptResultsWithStatisticsByExamAsync(Guid examId)
+{
+    var exam = await _examRepository.GetByIdAsync(examId);
+    if (exam is null)
+        return [];
 
-        var attempts = await _attemptService.GetExamAttempts(examId);
+    var attemptRecords = await _attemptService.GetAttemptResultsByExamAsync(examId);
+    if (attemptRecords is null || !attemptRecords.Any())
+        return [];
 
-        var bestAttemptsData = attemptRecords
-            .Join(attempts, 
-                result => result.AttemptId, 
-                attempt => attempt.Id, 
-                (result, attempt) => new { AttemptResult = result, ExamAttempt = attempt })
-            .GroupBy(x => x.ExamAttempt.UserId)
-            .Select(group => group.OrderByDescending(x => x.AttemptResult.Score).First())
-            .ToList();
-    
-        var bestAttemptResultIds = bestAttemptsData.Select(x => x.AttemptResult.Id).ToList();
-    
-        var bloomStats = await _bloomService.GetAnalysisByAttemptResultIdsAsync(bestAttemptResultIds);
+    var attempts = await _attemptService.GetExamAttempts(examId);
 
-        var aggregatedResults = bestAttemptsData.Select(data => new AttemptResultWithStatsDto
+    var combinedData = attemptRecords
+        .Join(attempts, 
+            result => result.AttemptId, 
+            attempt => attempt.Id, 
+            (result, attempt) => new { AttemptResult = result, ExamAttempt = attempt })
+        .ToList();
+
+    var processedAttemptsData = combinedData
+        .GroupBy(x => x.ExamAttempt.UserId)
+        .Select(group => 
         {
-            AttemptResult = data.AttemptResult, 
-            ExamAttempt = data.ExamAttempt,
-        
-            BloomAnalytics = bloomStats.FirstOrDefault(b => b.AttemptResultId == data.AttemptResult.Id)
-        }).ToList();
+            var hasUnchecked = group.Any(x => x.ExamAttempt.Status != AttemptStatus.Checked); 
+            
+            var targetAttempt = exam.EvaluationStrategy == EvaluationStrategy.Last
+                ? group.OrderByDescending(x => x.ExamAttempt.StartedAt).First()
+                : group.OrderByDescending(x => x.AttemptResult.Score).First();
 
-        return aggregatedResults;
-    }
+            return new 
+            { 
+                TargetData = targetAttempt, 
+                HasUncheckedAttempts = hasUnchecked 
+            };
+        })
+        .ToList();
+
+    var targetAttemptResultIds = processedAttemptsData
+        .Select(x => x.TargetData.AttemptResult.Id)
+        .ToList();
+
+    var bloomStats = await _bloomService.GetAnalysisByAttemptResultIdsAsync(targetAttemptResultIds);
+
+    var aggregatedResults = processedAttemptsData.Select(data => new AttemptResultWithStatsDto
+    {
+        AttemptResult = data.TargetData.AttemptResult, 
+        ExamAttempt = data.TargetData.ExamAttempt,
+        BloomAnalytics = bloomStats.FirstOrDefault(b => b.AttemptResultId == data.TargetData.AttemptResult.Id),
+        
+        HasUncheckedAttempts = data.HasUncheckedAttempts 
+    }).ToList();
+
+    return aggregatedResults;
+}
 
     public async Task<AttemptResultWithStatsDto> GetAttemptResultsWithStatisticsByIdAsync(Guid attemptResultId)
     {

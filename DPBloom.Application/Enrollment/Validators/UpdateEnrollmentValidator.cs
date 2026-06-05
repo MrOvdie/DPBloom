@@ -13,8 +13,5 @@ public class UpdateEnrollmentValidator : AbstractValidator<UpdateEnrollmentDto>
             .InclusiveBetween(0.0, 100.0)
             .WithMessage("Grade must be between 0 and 200.")
             .When(x => x.FinalGrade.HasValue);
-
-        /*RuleFor(ue => ue.Status)
-            .InclusiveBetween(0, 3).WithMessage("Excided grade range.");*/ //TODO: make proper validation
     }
 }

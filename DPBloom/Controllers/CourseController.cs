@@ -30,7 +30,7 @@ public class CourseController : ControllerBase
     [Authorize]
     public async Task<ActionResult<CourseDto>> GetById(Guid id)
     {
-        var course = await _courseService.GetByIdWithAccessAsync(id); //TODO: check
+        var course = await _courseService.GetByIdWithAccessAsync(id);
         if (course is null) return NotFound();
 
         return Ok(course);

@@ -6,10 +6,14 @@ namespace DPBloom.Application.Attempt.Contracts;
 public class AttemptDetailsDto
 {
     public Guid Id { get; set; }
+    public Guid UserId { get; set; }
     public Guid? AttemptResultId { get; set; }
     public Guid ExamId { get; set; }
     public string ExamTitle { get; set; }
     public string? ExamDescription { get; set; }
+    public bool CanSkip { get; set; }
+    public bool ShowResults { get; set; }
+    public bool IsRandomOrder { get; set; }
     public int AttemptNumber { get; set; }
     public DateTime CreatedOn { get; set; }
     public DateTime StartedAt { get; set; }

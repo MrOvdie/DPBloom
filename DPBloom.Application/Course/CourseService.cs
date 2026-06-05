@@ -7,6 +7,7 @@ using DPBloom.Application.Enrollment;
 using DPBloom.Application.Enrollment.Contracts;
 using DPBloom.Application.Exam;
 using DPBloom.Core.Course;
+using DPBloom.Core.Exam.Enums;
 using DPBloom.Core.User;
 using FluentValidation;
 using MediatR;
@@ -338,15 +339,29 @@ public class CourseService : ICourseService
 
         var userAttempts = await _attemptResultRepository
             .GetAsync(a => a.UserId.Equals(userId) && a.CourseId.Equals(courseId));
-
-        if (userAttempts is null)
+        if (userAttempts is null || !userAttempts.Any())
             return 0;
 
-        var uniqueBestAttmepts = userAttempts.GroupBy(ba => ba.ExamId)
-            .Select(group => group.OrderByDescending(ba => ba.Score).First())
+        var examIds = userAttempts.Select(a => a.ExamId).Distinct().ToList();
+
+        var exams = await _examRepository.GetAsync(e => examIds.Contains(e.Id));
+    
+        var examsDict = exams.ToDictionary(e => e.Id, e => e);
+
+        var actualAttempts = userAttempts.GroupBy(a => a.ExamId)
+            .Select(group =>
+            {
+                var exam = examsDict.GetValueOrDefault(group.Key);
+                if (exam is not null && exam.EvaluationStrategy == EvaluationStrategy.Last)
+                {
+                    return group.OrderByDescending(a => a.CreatedOn).First();
+                }
+
+                return group.OrderByDescending(a => a.Score).First();
+            })
             .ToList();
 
-        var userScore = uniqueBestAttmepts.Sum(a => a.Score);
+        var userScore = actualAttempts.Sum(a => a.Score);
 
         return userScore;
     }

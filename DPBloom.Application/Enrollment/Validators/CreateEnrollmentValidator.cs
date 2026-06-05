@@ -9,9 +9,6 @@ public class CreateEnrollmentValidator : AbstractValidator<CreateEnrollmentDto>
     {
         RuleFor(ce => ce).NotNull().WithMessage("Course object cannot be null.");
 
-        /*RuleFor(ce => ce.Status)
-            .InclusiveBetween(0, 3).WithMessage("Excided grade range.");*/ //TODO: make proper validation
-
         RuleFor(ce => ce.UserId)
             .NotEmpty().WithMessage("User id is required.");
 

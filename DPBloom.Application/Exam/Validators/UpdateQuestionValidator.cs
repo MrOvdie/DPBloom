@@ -15,7 +15,7 @@ public class UpdateQuestionValidator : AbstractValidator<UpdateQuestionDto>
             .MaximumLength(500).WithMessage("Question text cannot be longer than 500 characters.");
 
         RuleFor(q => q.Type)
-            .IsInEnum().WithMessage("Invalid question type."); //TODO: make proper ranges
+            .IsInEnum().WithMessage("Invalid question type.");
 
         RuleFor(q => q.Level)
             .IsInEnum().WithMessage("Invalid Bloom's taxonomy level.");
@@ -26,7 +26,8 @@ public class UpdateQuestionValidator : AbstractValidator<UpdateQuestionDto>
         RuleFor(q => q.Options)
             .NotEmpty().WithMessage("Question must have options.")
             .Must(options => options == null || options.Count >= 2)
-            .WithMessage("At least 2 options are required for a choice-based question.");
+            .WithMessage("At least 2 options are required for a choice-based question.")
+            .When(q => q.Type == QuestionType.SingleChoice || q.Type == QuestionType.MultipleChoice);
         
         RuleForEach(q => q.Options)
             .SetValidator(new UpdateOptionValidator())

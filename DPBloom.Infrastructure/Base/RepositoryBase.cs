@@ -159,28 +159,11 @@ public class RepositoryBase<TModel, TDao, TContext> : IRepository<TModel>
         await DbContext.SaveChangesAsync();
 
         return Mapper.Map<TModel>(dao);
-        
-        /*//TODO: check, if it working correctly
-        
-        var existingDao = await DbContext.Set<TDao>().FindAsync(entity.Id); 
-        
-        if (existingDao is null)
-        {
-            return null; 
         }
-
-        Mapper.Map(entity, existingDao);
-    
-        await DbContext.SaveChangesAsync();
-    
-        return Mapper.Map<TModel>(existingDao);*/
-    }
 
     public async Task DeleteAsync(Guid id)
     {
-        /*DbContext.Set<TEntity>().Remove(entity);
-        await DbContext.SaveChangesAsync();*/
-        var existingDao = await DbContext.Set<TDao>().FindAsync(id);
+       var existingDao = await DbContext.Set<TDao>().FindAsync(id);
 
         if (existingDao is null)
         {

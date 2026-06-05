@@ -42,12 +42,9 @@ public class EnrollmentService : IEnrollmentService
         if (existingEnrollment)
             throw new InvalidOperationException("Student is already enrolled in this course");
 
-        //TODO: check if I accidentally missed smth
-
         var createdEnrollmentModel = _mapper.Map<UserEnrollmentModel>(createEnrollmentDto);
         createdEnrollmentModel.Id = Uuid.NewDatabaseFriendly(Database.SqlServer);
         createdEnrollmentModel.CreatedOn = createdEnrollmentModel.UpdatedOn = DateTime.UtcNow;
-        //createdEnrollmentModel.CourseId = createEnrollment.CourseId;
 
         var createdEnrollment = await _enrollmentRepository.AddAsync(createdEnrollmentModel);
 
