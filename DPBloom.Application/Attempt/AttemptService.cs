@@ -285,10 +285,20 @@ public class AttemptService : IAttemptService
         }
 
         var tempDetails = _mapper.Map<AttemptDetailsDto>(attemptAggregate);
+        tempDetails.Id = attemptId;
+        tempDetails.AttemptResultId = resultModel.Id;
+        tempDetails.ExamTitle = exam.Exam.Title;
+        tempDetails.ExamDescription = exam.Exam.Description;
+        tempDetails.CanSkip = exam.Exam.CanSkip;
+        tempDetails.ShowResults = exam.Exam.ShowResults;
+        tempDetails.IsRandomOrder = exam.Exam.IsRandomOrder;
+        
         tempDetails.Duration = resultModel.Duration;
         tempDetails.AttemptNumber = await _attemptRepository.GetAttemptCountAsync(attemptId);
         tempDetails.SavedAnswers = _mapper.Map<List<SavedAnswerDto>>(attemptAggregate.Answers);
         tempDetails.Questions = _mapper.Map<List<QuestionDto>>(exam.Questions);
+        tempDetails.StartedAt = attemptAggregate.Attempt.StartedAt;
+        tempDetails.Status = attemptAggregate.Attempt.Status;
 
         if (exam.AnswerOptions is not null)
         {
